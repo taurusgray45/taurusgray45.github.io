@@ -286,7 +286,7 @@
 <!-- 시장 현황 바 -->
 <div class="tradingview-widget-container" style="height:46px;background:var(--surface);border-bottom:1px solid var(--border);">
   <div class="tradingview-widget-container__widget"></div>
-  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+  <script 입력="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
   {"symbols":[{"description":"KOSPI","proName":"KRX:KOSPI"},{"description":"KOSDAQ","proName":"KRX:KOSDAQ"},{"description":"S&P500","proName":"FOREXCOM:SPXUSD"},{"description":"나스닥","proName":"FOREXCOM:NSXUSD"},{"description":"BTC/USD","proName":"BITSTAMP:BTCUSD"},{"description":"ETH/USD","proName":"BITSTAMP:ETHUSD"},{"description":"USD/KRW","proName":"FX_IDC:USDKRW"},{"description":"VIX","proName":"CAPITALCOM:VIX"}],"showSymbolLogo":true,"isTransparent":true,"displayMode":"adaptive","colorTheme":"light","locale":"kr"}
   </script>
 </div>
@@ -302,8 +302,8 @@
       <a href="#domestic">국내주식</a>
       <a href="#us">미국주식</a>
       <a href="#coin">코인</a>
-      <a href="calc.html">🧮 계산기</a>
-      <a href="news.html">📰 경제뉴스</a>
+      <a href="calc.html">계산기</a>
+      <a href="news.html">경제뉴스</a>
       <a href="#community">소통방</a>
       <a href="#faq">FAQ</a>
     </nav>
@@ -615,98 +615,7 @@ function sharePage() {
   }
 }
 
-/* ── 종목 계산기 ── */
-let currency = 'KRW';
-let usdkrw = 1380;
 
-async function fetchExchangeRate() {
-  try {
-    const res = await fetch('https://open.er-api.com/v6/latest/USD');
-    const data = await res.json();
-    usdkrw = data.rates.KRW;
-    document.getElementById('exRateInfo').textContent = `환율: 1 USD = ${usdkrw.toFixed(1)} KRW (실시간)`;
-  } catch {
-    document.getElementById('exRateInfo').textContent = `환율: 약 ${usdkrw} KRW (기본값)`;
-  }
-}
-fetchExchangeRate();
-
-function setCurrency(c) {
-  currency = c;
-  document.getElementById('btnKRW').classList.toggle('active', c === 'KRW');
-  document.getElementById('btnUSD').classList.toggle('active', c === 'USD');
-  document.getElementById('exRateInfo').style.display = c === 'USD' ? 'block' : 'none';
-}
-
-function switchTab(tab, btn) {
-  document.querySelectorAll('.calc-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-profit').style.display = tab === 'profit' ? 'flex' : 'none';
-  document.getElementById('tab-average').style.display = tab === 'average' ? 'flex' : 'none';
-}
-
-function fmt(n, cur) {
-  if (cur === 'USD') return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-  return n.toLocaleString('ko-KR') + '원';
-}
-
-function calcProfit() {
-  const avg = parseFloat(document.getElementById('p_avg').value);
-  const qty = parseFloat(document.getElementById('p_qty').value);
-  const target = parseFloat(document.getElementById('p_target').value);
-  const stop = parseFloat(document.getElementById('p_stop').value);
-  if (!avg || !qty) return alert('평균단가와 보유 수량을 입력하세요.');
-  const res = document.getElementById('result-profit');
-  res.classList.add('show');
-  if (target) {
-    const profit = (target - avg) * qty;
-    const rate = ((target - avg) / avg * 100);
-    document.getElementById('r_profit_amt').textContent = (profit >= 0 ? '+' : '') + fmt(profit, currency);
-    document.getElementById('r_profit_rate').textContent = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
-    if (currency === 'USD') {
-      document.getElementById('r_krw_section').style.display = 'block';
-      document.getElementById('r_profit_krw').textContent = (profit >= 0 ? '+' : '') + (profit * usdkrw).toLocaleString('ko-KR') + '원';
-    }
-  }
-  if (stop) {
-    const loss = (stop - avg) * qty;
-    const lrate = ((stop - avg) / avg * 100);
-    document.getElementById('r_loss_amt').textContent = (loss >= 0 ? '+' : '') + fmt(loss, currency);
-    document.getElementById('r_loss_rate').textContent = (lrate >= 0 ? '+' : '') + lrate.toFixed(2) + '%';
-    if (currency === 'USD') {
-      document.getElementById('r_loss_krw').textContent = (loss >= 0 ? '+' : '') + (loss * usdkrw).toLocaleString('ko-KR') + '원';
-    }
-  }
-}
-
-function calcAverage() {
-  const avg = parseFloat(document.getElementById('a_avg').value);
-  const qty = parseFloat(document.getElementById('a_qty').value);
-  const addPrice = parseFloat(document.getElementById('a_add_price').value);
-  const addQty = parseFloat(document.getElementById('a_add_qty').value);
-  if (!avg || !qty || !addPrice || !addQty) return alert('모든 항목을 입력하세요.');
-  const totalQty = qty + addQty;
-  const totalInvest = avg * qty + addPrice * addQty;
-  const newAvg = totalInvest / totalQty;
-  const dropRate = ((newAvg - avg) / avg * 100);
-  const res = document.getElementById('result-average');
-  res.classList.add('show');
-  document.getElementById('r_new_avg').textContent = fmt(newAvg, currency);
-  document.getElementById('r_total_qty').textContent = totalQty.toLocaleString() + '주';
-  document.getElementById('r_total_invest').textContent = fmt(totalInvest, currency);
-  document.getElementById('r_avg_drop').textContent = (dropRate >= 0 ? '+' : '') + dropRate.toFixed(2) + '%';
-}
-
-function searchChart() {
-  const sym = document.getElementById('chartSymbol').value.trim().toUpperCase();
-  if (!sym) return;
-  const encoded = encodeURIComponent(JSON.stringify({
-    symbol: sym.includes(':') ? sym : 'NASDAQ:' + sym,
-    interval: 'D', colorTheme: 'light', autosize: true
-  }));
-  document.getElementById('chartFrame').src =
-    'https://s.tradingview.com/embed-widget/advanced-chart/?locale=kr#' + encoded;
-}
 </script>
 </body>
-  </html>
+</html>
