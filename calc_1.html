@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>종목 계산기 · 고려대 재학생 트레이더</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧮</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f2f4f6; --surface:#ffffff; --surface2:#f8f9fa;
+    --ink:#191f28; --ink2:#333d4b; --ink3:#6b7684; --ink4:#b0b8c1;
+    --blue:#3182f6; --blue-light:#ebf2fe;
+    --red:#f04452; --green:#05b994;
+    --border:#e5e8eb; --radius:16px; --radius-sm:10px;
+  }
+  [data-theme="dark"] {
+    --bg:#111317; --surface:#1e2128; --surface2:#262b33;
+    --ink:#f0f2f4; --ink2:#cdd1d7; --ink3:#8b95a1; --ink4:#4e5968;
+    --blue-light:#1a2d4f; --border:#2e333d;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Noto Sans KR',-apple-system,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; -webkit-font-smoothing:antialiased; transition:background 0.25s,color 0.25s; }
+
+  /* 헤더 */
+  header { background:var(--surface); border-bottom:1px solid var(--border); height:56px; position:sticky; top:0; z-index:100; transition:background 0.25s; }
+  .header-inner { max-width:1400px; margin:0 auto; padding:0 2rem; height:100%; display:flex; align-items:center; justify-content:space-between; }
+  .back-btn { display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--ink3); font-size:0.875rem; font-weight:500; padding:6px 12px; border-radius:8px; transition:all 0.15s; }
+  .back-btn:hover { background:var(--bg); color:var(--blue); }
+  .header-title { font-size:1rem; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:8px; }
+  .dark-toggle { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:5px 12px; cursor:pointer; font-size:0.78rem; font-weight:600; color:var(--ink3); display:flex; align-items:center; gap:6px; transition:all 0.15s; }
+  .dark-toggle:hover { border-color:var(--blue); color:var(--blue); }
+
+  /* 메인 레이아웃 */
+  .main { max-width:900px; margin:0 auto; padding:32px 2rem; }
+
+
+  /* 계산기 패널 */
+  .calc-container { display:flex; flex-direction:column; gap:20px; }
+  .calc-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px; transition:background 0.25s; }
+  .calc-panel-title { font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .calc-panel-desc { font-size:0.78rem; color:var(--ink3); margin-bottom:20px; }
+  .calc-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .calc-tab { padding:7px 16px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); font-size:0.8rem; font-weight:600; color:var(--ink3); cursor:pointer; transition:all 0.15s; }
+  .calc-tab.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .currency-row { display:flex; gap:8px; margin-bottom:8px; }
+  .currency-btn { padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); font-size:0.78rem; font-weight:600; color:var(--ink3); cursor:pointer; transition:all 0.15s; }
+  .currency-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .rate-info { font-size:0.72rem; color:var(--ink4); margin-bottom:16px; }
+
+  /* 폼 */
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  @media(max-width:600px) { .form-grid { grid-template-columns:1fr; } }
+  .form-row { display:flex; flex-direction:column; gap:5px; }
+  .form-row.full { grid-column:1/-1; }
+  .form-label { font-size:0.75rem; font-weight:600; color:var(--ink3); }
+  .form-input { width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:10px; background:var(--surface2); color:var(--ink); font-size:0.9rem; font-family:inherit; transition:border-color 0.15s; outline:none; }
+  .form-input:focus { border-color:var(--blue); background:var(--surface); }
+  .calc-btn { width:100%; padding:13px; border-radius:10px; border:none; background:var(--blue); color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; margin-top:4px; transition:background 0.15s; }
+  .calc-btn:hover { background:#1a6de8; }
+  .reset-btn { width:100%; padding:9px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--ink3); font-size:0.82rem; font-weight:600; cursor:pointer; margin-top:8px; transition:all 0.15s; }
+  .reset-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* 결과 */
+  .result-box { display:none; margin-top:20px; border-radius:12px; border:1px solid var(--border); overflow:hidden; }
+  .result-box.show { display:block; }
+  .result-header { background:var(--blue-light); padding:12px 18px; font-size:0.8rem; font-weight:700; color:var(--blue); }
+  .result-body { padding:16px 18px; }
+  .result-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); }
+  .result-row:last-child { border-bottom:none; }
+  .result-label { font-size:0.84rem; color:var(--ink3); }
+  .result-val { font-size:0.9rem; font-weight:700; color:var(--ink); }
+  .result-val.pos { color:var(--red); }
+  .result-val.neg { color:var(--green); }
+  .result-section { margin-top:12px; }
+  .result-section-title { font-size:0.75rem; font-weight:700; color:var(--ink4); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; padding-top:8px; border-top:1px dashed var(--border); }
+
+  /* 브레이크이븐 */
+  .breakeven-box { background:var(--surface2); border-radius:10px; padding:14px 18px; margin-top:12px; border:1px solid var(--border); }
+  .breakeven-title { font-size:0.75rem; font-weight:700; color:var(--ink4); margin-bottom:6px; }
+  .breakeven-val { font-size:1rem; font-weight:700; color:var(--blue); }
+
+  footer { text-align:center; padding:24px; font-size:0.75rem; color:var(--ink4); border-top:1px solid var(--border); margin-top:16px; }
+  footer a { color:var(--blue); text-decoration:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="back-btn" href="index.html">← 메인으로</a>
+    <div class="header-title">🧮 종목 계산기</div>
+    <button class="dark-toggle" onclick="toggleDark()">
+      <span class="toggle-icon">🌙</span><span id="toggleLabel">다크모드</span>
+    </button>
+  </div>
+</header>
+
+<div class="main">
+  <!-- 계산기 -->
+  <div class="calc-container">
+
+    <!-- 수익/손절 계산기 -->
+    <div class="calc-panel">
+      <div class="calc-panel-title">📈 수익 · 손절 계산기</div>
+      <div class="calc-panel-desc">평균단가와 목표가/손절가를 입력하면 예상 수익·손실을 자동 계산합니다.</div>
+      <div class="currency-row">
+        <button class="currency-btn active" id="btnKRW1" onclick="setCur('KRW','1')">🇰🇷 원화</button>
+        <button class="currency-btn" id="btnUSD1" onclick="setCur('USD','1')">🇺🇸 달러 (환율 자동)</button>
+      </div>
+      <div class="rate-info" id="rateInfo1">환율 로딩 중...</div>
+      <div class="form-grid">
+        <div class="form-row"><label class="form-label">평균단가</label><input class="form-input" id="p_avg" type="number" placeholder="예: 75,000"></div>
+        <div class="form-row"><label class="form-label">보유 수량 (주)</label><input class="form-input" id="p_qty" type="number" placeholder="예: 100"></div>
+        <div class="form-row"><label class="form-label">목표 매도가</label><input class="form-input" id="p_target" type="number" placeholder="예: 90,000"></div>
+        <div class="form-row"><label class="form-label">손절가</label><input class="form-input" id="p_stop" type="number" placeholder="예: 68,000"></div>
+      </div>
+      <button class="calc-btn" onclick="calcProfit()">계산하기</button>
+      <button class="reset-btn" onclick="resetProfit()">초기화</button>
+      <div class="result-box" id="res-profit">
+        <div class="result-header">📊 계산 결과</div>
+        <div class="result-body">
+          <div class="result-section-title">📈 목표 수익</div>
+          <div class="result-row"><span class="result-label">예상 수익금</span><span class="result-val pos" id="r_p_amt">—</span></div>
+          <div class="result-row"><span class="result-label">수익률</span><span class="result-val pos" id="r_p_rate">—</span></div>
+          <div class="result-row"><span class="result-label">총 매도금액</span><span class="result-val" id="r_p_total">—</span></div>
+          <div class="result-section-title">📉 손절 손실</div>
+          <div class="result-row"><span class="result-label">예상 손실금</span><span class="result-val neg" id="r_l_amt">—</span></div>
+          <div class="result-row"><span class="result-label">손실률</span><span class="result-val neg" id="r_l_rate">—</span></div>
+          <div id="krw_section" style="display:none;">
+            <div class="result-section-title">🇰🇷 원화 환산 (달러 종목)</div>
+            <div class="result-row"><span class="result-label">수익 (원화)</span><span class="result-val pos" id="r_p_krw">—</span></div>
+            <div class="result-row"><span class="result-label">손실 (원화)</span><span class="result-val neg" id="r_l_krw">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 물타기 계산기 -->
+    <div class="calc-panel">
+      <div class="calc-panel-title">💧 물타기 (추가 매수) 계산기</div>
+      <div class="calc-panel-desc">추가 매수 후 변경된 평균단가와 총 수량을 계산합니다.</div>
+      <div class="currency-row">
+        <button class="currency-btn active" id="btnKRW2" onclick="setCur('KRW','2')">🇰🇷 원화</button>
+        <button class="currency-btn" id="btnUSD2" onclick="setCur('USD','2')">🇺🇸 달러 (환율 자동)</button>
+      </div>
+      <div class="rate-info" id="rateInfo2">환율 로딩 중...</div>
+      <div class="form-grid">
+        <div class="form-row"><label class="form-label">현재 평균단가</label><input class="form-input" id="a_avg" type="number" placeholder="예: 75,000"></div>
+        <div class="form-row"><label class="form-label">현재 보유 수량</label><input class="form-input" id="a_qty" type="number" placeholder="예: 100"></div>
+        <div class="form-row"><label class="form-label">추가 매수 가격</label><input class="form-input" id="a_price" type="number" placeholder="예: 60,000"></div>
+        <div class="form-row"><label class="form-label">추가 매수 수량</label><input class="form-input" id="a_addqty" type="number" placeholder="예: 50"></div>
+      </div>
+      <button class="calc-btn" onclick="calcAvg()">계산하기</button>
+      <button class="reset-btn" onclick="resetAvg()">초기화</button>
+      <div class="result-box" id="res-avg">
+        <div class="result-header">📊 계산 결과</div>
+        <div class="result-body">
+          <div class="result-row"><span class="result-label">변경된 평균단가</span><span class="result-val" id="r_new_avg">—</span></div>
+          <div class="result-row"><span class="result-label">총 보유 수량</span><span class="result-val" id="r_total_qty">—</span></div>
+          <div class="result-row"><span class="result-label">총 투자금액</span><span class="result-val" id="r_total_invest">—</span></div>
+          <div class="result-row"><span class="result-label">평단 변화</span><span class="result-val neg" id="r_avg_drop">—</span></div>
+          <div class="breakeven-box">
+            <div class="breakeven-title">손익분기점 (BEP)</div>
+            <div class="breakeven-val" id="r_bep">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 목표 수익률 역산 계산기 -->
+    <div class="calc-panel">
+      <div class="calc-panel-title">🎯 목표 수익률 역산</div>
+      <div class="calc-panel-desc">원하는 수익률을 입력하면 목표 매도가를 자동으로 계산합니다.</div>
+      <div class="form-grid">
+        <div class="form-row"><label class="form-label">평균단가</label><input class="form-input" id="g_avg" type="number" placeholder="예: 75,000"></div>
+        <div class="form-row"><label class="form-label">보유 수량</label><input class="form-input" id="g_qty" type="number" placeholder="예: 100"></div>
+        <div class="form-row"><label class="form-label">목표 수익률 (%)</label><input class="form-input" id="g_rate" type="number" placeholder="예: 20"></div>
+        <div class="form-row"><label class="form-label">목표 수익금 (선택)</label><input class="form-input" id="g_profit" type="number" placeholder="예: 1,000,000"></div>
+      </div>
+      <button class="calc-btn" onclick="calcGoal()">계산하기</button>
+      <button class="reset-btn" onclick="resetGoal()">초기화</button>
+      <div class="result-box" id="res-goal">
+        <div class="result-header">📊 계산 결과</div>
+        <div class="result-body">
+          <div class="result-row"><span class="result-label">목표 매도가 (수익률 기준)</span><span class="result-val pos" id="r_g_price_rate">—</span></div>
+          <div class="result-row"><span class="result-label">예상 수익금</span><span class="result-val pos" id="r_g_profit_rate">—</span></div>
+          <div class="result-row" id="g_profit_row" style="display:none;"><span class="result-label">목표 매도가 (수익금 기준)</span><span class="result-val pos" id="r_g_price_profit">—</span></div>
+          <div class="result-row" id="g_rate_row" style="display:none;"><span class="result-label">수익률 (수익금 기준)</span><span class="result-val pos" id="r_g_rate_profit">—</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <a href="index.html">← 고려대 재학생 트레이더 메인으로</a> · 본 계산기는 참고용이며 투자 판단의 책임은 투자자 본인에게 있습니다.
+</footer>
+
+<script>
+/* ── 다크모드 ── */
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('toggleLabel').textContent = dark ? '라이트모드' : '다크모드';
+  document.querySelector('.toggle-icon').textContent = dark ? '☀️' : '🌙';
+}
+function toggleDark() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  applyTheme(!isDark);
+  localStorage.setItem('theme', !isDark ? 'dark' : 'light');
+}
+applyTheme(localStorage.getItem('theme') === 'dark');
+
+/* ── 환율 ── */
+let usdkrw = 1380;
+let cur1 = 'KRW', cur2 = 'KRW';
+async function fetchRate() {
+  try {
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    const d = await r.json();
+    usdkrw = d.rates.KRW;
+    const txt = `1 USD = ${usdkrw.toFixed(1)} KRW (실시간)`;
+    document.getElementById('rateInfo1').textContent = '환율: ' + txt;
+    document.getElementById('rateInfo2').textContent = '환율: ' + txt;
+  } catch {
+    document.getElementById('rateInfo1').textContent = `환율: 약 ${usdkrw} KRW (기본값)`;
+    document.getElementById('rateInfo2').textContent = `환율: 약 ${usdkrw} KRW (기본값)`;
+  }
+}
+fetchRate();
+
+function setCur(c, panel) {
+  if (panel === '1') {
+    cur1 = c;
+    document.getElementById('btnKRW1').classList.toggle('active', c==='KRW');
+    document.getElementById('btnUSD1').classList.toggle('active', c==='USD');
+  } else {
+    cur2 = c;
+    document.getElementById('btnKRW2').classList.toggle('active', c==='KRW');
+    document.getElementById('btnUSD2').classList.toggle('active', c==='USD');
+  }
+}
+
+function fmtNum(n, cur) {
+  if (cur === 'USD') return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return Math.round(n).toLocaleString('ko-KR') + '원';
+}
+
+/* ── 종목 검색 (Yahoo Finance 무료 API) ── */
+let currentPrice = null;
+
+async function searchStock() {
+  const sym = document.getElementById('stockInput').value.trim().toUpperCase();
+  if (!sym) return;
+  document.getElementById('loadingMsg').style.display = 'block';
+  document.getElementById('stockResult').classList.remove('show');
+  document.getElementById('errorMsg').style.display = 'none';
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`;
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+    const parsed = JSON.parse(data.contents);
+    const meta = parsed.chart.result[0].meta;
+    currentPrice = meta.regularMarketPrice;
+    const prevClose = meta.chartPreviousClose || meta.previousClose;
+    const chg = currentPrice - prevClose;
+    const chgPct = (chg / prevClose * 100);
+    document.getElementById('sName').textContent = meta.shortName || meta.symbol;
+    document.getElementById('sSymbol').textContent = meta.symbol + ' · ' + meta.exchangeName;
+    document.getElementById('sPrice').textContent = currentPrice.toLocaleString() + ' ' + meta.currency;
+    const chgEl = document.getElementById('sChange');
+    chgEl.textContent = `${chg >= 0 ? '+' : ''}${chg.toFixed(2)} (${chgPct >= 0 ? '+' : ''}${chgPct.toFixed(2)}%)`;
+    chgEl.className = 'stock-change ' + (chg >= 0 ? 'pos' : 'neg');
+    document.getElementById('s52H').textContent = (meta.fiftyTwoWeekHigh || '—').toLocaleString();
+    document.getElementById('s52L').textContent = (meta.fiftyTwoWeekLow || '—').toLocaleString();
+    document.getElementById('sMktCap').textContent = meta.marketCap ? (meta.marketCap / 1e12).toFixed(2) + 'T' : '—';
+    document.getElementById('sPER').textContent = '—';
+    document.getElementById('stockResult').classList.add('show');
+  } catch(e) {
+    document.getElementById('errorMsg').textContent = '종목을 찾을 수 없습니다. 티커를 확인해주세요.';
+    document.getElementById('errorMsg').style.display = 'block';
+  }
+  document.getElementById('loadingMsg').style.display = 'none';
+}
+
+function applyPrice() {
+  if (!currentPrice) return;
+  document.getElementById('p_avg').value = currentPrice.toFixed(2);
+  document.getElementById('a_avg').value = currentPrice.toFixed(2);
+  document.getElementById('g_avg').value = currentPrice.toFixed(2);
+  alert(`현재가 ${currentPrice.toLocaleString()}이 계산기에 적용되었습니다.`);
+}
+
+/* ── 수익/손절 계산기 ── */
+function calcProfit() {
+  const avg = parseFloat(document.getElementById('p_avg').value);
+  const qty = parseFloat(document.getElementById('p_qty').value);
+  const target = parseFloat(document.getElementById('p_target').value);
+  const stop = parseFloat(document.getElementById('p_stop').value);
+  if (!avg || !qty) return alert('평균단가와 보유 수량을 입력하세요.');
+  const res = document.getElementById('res-profit');
+  res.classList.add('show');
+  if (target) {
+    const profit = (target - avg) * qty;
+    document.getElementById('r_p_amt').textContent = (profit >= 0 ? '+' : '') + fmtNum(profit, cur1);
+    document.getElementById('r_p_rate').textContent = (profit >= 0 ? '+' : '') + ((target-avg)/avg*100).toFixed(2) + '%';
+    document.getElementById('r_p_total').textContent = fmtNum(target * qty, cur1);
+    if (cur1 === 'USD') {
+      document.getElementById('krw_section').style.display = 'block';
+      document.getElementById('r_p_krw').textContent = (profit >= 0 ? '+' : '') + Math.round(profit * usdkrw).toLocaleString('ko-KR') + '원';
+    }
+  }
+  if (stop) {
+    const loss = (stop - avg) * qty;
+    document.getElementById('r_l_amt').textContent = (loss >= 0 ? '+' : '') + fmtNum(loss, cur1);
+    document.getElementById('r_l_rate').textContent = (loss >= 0 ? '+' : '') + ((stop-avg)/avg*100).toFixed(2) + '%';
+    if (cur1 === 'USD') {
+      document.getElementById('r_l_krw').textContent = (loss >= 0 ? '+' : '') + Math.round(loss * usdkrw).toLocaleString('ko-KR') + '원';
+    }
+  }
+}
+function resetProfit() {
+  ['p_avg','p_qty','p_target','p_stop'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('res-profit').classList.remove('show');
+}
+
+/* ── 물타기 계산기 ── */
+function calcAvg() {
+  const avg = parseFloat(document.getElementById('a_avg').value);
+  const qty = parseFloat(document.getElementById('a_qty').value);
+  const addP = parseFloat(document.getElementById('a_price').value);
+  const addQ = parseFloat(document.getElementById('a_addqty').value);
+  if (!avg || !qty || !addP || !addQ) return alert('모든 항목을 입력하세요.');
+  const totalQ = qty + addQ;
+  const totalI = avg * qty + addP * addQ;
+  const newAvg = totalI / totalQ;
+  const drop = ((newAvg - avg) / avg * 100);
+  document.getElementById('res-avg').classList.add('show');
+  document.getElementById('r_new_avg').textContent = fmtNum(newAvg, cur2);
+  document.getElementById('r_total_qty').textContent = totalQ.toLocaleString() + '주';
+  document.getElementById('r_total_invest').textContent = fmtNum(totalI, cur2);
+  document.getElementById('r_avg_drop').textContent = (drop >= 0 ? '+' : '') + drop.toFixed(2) + '%';
+  document.getElementById('r_bep').textContent = fmtNum(newAvg, cur2) + ' 이상에서 수익';
+}
+function resetAvg() {
+  ['a_avg','a_qty','a_price','a_addqty'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('res-avg').classList.remove('show');
+}
+
+/* ── 목표 수익률 역산 ── */
+function calcGoal() {
+  const avg = parseFloat(document.getElementById('g_avg').value);
+  const qty = parseFloat(document.getElementById('g_qty').value);
+  const rate = parseFloat(document.getElementById('g_rate').value);
+  const profit = parseFloat(document.getElementById('g_profit').value);
+  if (!avg || !qty) return alert('평균단가와 보유 수량을 입력하세요.');
+  document.getElementById('res-goal').classList.add('show');
+  if (rate) {
+    const targetP = avg * (1 + rate/100);
+    const profitAmt = (targetP - avg) * qty;
+    document.getElementById('r_g_price_rate').textContent = fmtNum(targetP, 'KRW');
+    document.getElementById('r_g_profit_rate').textContent = '+' + fmtNum(profitAmt, 'KRW');
+  }
+  if (profit) {
+    const targetP2 = avg + profit / qty;
+    const rateAmt = (profit / (avg * qty) * 100);
+    document.getElementById('g_profit_row').style.display = 'flex';
+    document.getElementById('g_rate_row').style.display = 'flex';
+    document.getElementById('r_g_price_profit').textContent = fmtNum(targetP2, 'KRW');
+    document.getElementById('r_g_rate_profit').textContent = '+' + rateAmt.toFixed(2) + '%';
+  }
+}
+function resetGoal() {
+  ['g_avg','g_qty','g_rate','g_profit'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('res-goal').classList.remove('show');
+  document.getElementById('g_profit_row').style.display = 'none';
+  document.getElementById('g_rate_row').style.display = 'none';
+}
+</script>
+</body>
+</html>
