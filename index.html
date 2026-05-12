@@ -18,13 +18,14 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getDatabase, ref, runTransaction, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
   const firebaseConfig = {
-    apiKey: "AIzaSyDemo-ReplaceWithYourKey",
-    authDomain: "your-project.firebaseapp.com",
-    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-    projectId: "your-project",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "000000000000",
-    appId: "1:000000000000:web:0000000000000000"
+    apiKey: "AIzaSyATj_hRg6sKelnIK6f2wbNswnS8GJEoTVM",
+    authDomain: "koreacount-5f7ee.firebaseapp.com",
+    databaseURL: "https://koreacount-5f7ee-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "koreacount-5f7ee",
+    storageBucket: "koreacount-5f7ee.firebasestorage.app",
+    messagingSenderId: "158317827519",
+    appId: "1:158317827519:web:ce12e78b1db966b51dfd0a",
+    measurementId: "G-1Q3DC9E78C"
   };
   // ── Firebase 방문자 카운터 ──
   // ⚠️ 위 firebaseConfig를 본인 Firebase 프로젝트 설정으로 교체하세요
@@ -285,7 +286,7 @@
 <!-- 시장 현황 바 -->
 <div class="tradingview-widget-container" style="height:46px;background:var(--surface);border-bottom:1px solid var(--border);">
   <div class="tradingview-widget-container__widget"></div>
-  <script 입력="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
   {"symbols":[{"description":"KOSPI","proName":"KRX:KOSPI"},{"description":"KOSDAQ","proName":"KRX:KOSDAQ"},{"description":"S&P500","proName":"FOREXCOM:SPXUSD"},{"description":"나스닥","proName":"FOREXCOM:NSXUSD"},{"description":"BTC/USD","proName":"BITSTAMP:BTCUSD"},{"description":"ETH/USD","proName":"BITSTAMP:ETHUSD"},{"description":"USD/KRW","proName":"FX_IDC:USDKRW"},{"description":"VIX","proName":"CAPITALCOM:VIX"}],"showSymbolLogo":true,"isTransparent":true,"displayMode":"adaptive","colorTheme":"light","locale":"kr"}
   </script>
 </div>
@@ -301,8 +302,8 @@
       <a href="#domestic">국내주식</a>
       <a href="#us">미국주식</a>
       <a href="#coin">코인</a>
-      <a href="calc.html">계산기</a>
-      <a href="news.html">경제뉴스</a>
+      <a href="calc.html">🧮 계산기</a>
+      <a href="news.html">📰 경제뉴스</a>
       <a href="#community">소통방</a>
       <a href="#faq">FAQ</a>
     </nav>
@@ -708,4 +709,4 @@ function searchChart() {
 }
 </script>
 </body>
-</html>
+  </html>
