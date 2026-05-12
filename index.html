@@ -14,9 +14,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
-<script 입력="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getDatabase, ref, runTransaction, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyATj_hRg6sKelnIK6f2wbNswnS8GJEoTVM",
     authDomain: "koreacount-5f7ee.firebaseapp.com",
@@ -27,27 +27,25 @@
     appId: "1:158317827519:web:ce12e78b1db966b51dfd0a",
     measurementId: "G-1Q3DC9E78C"
   };
-  // ── Firebase 방문자 카운터 ──
-  // ⚠️ 위 firebaseConfig를 본인 Firebase 프로젝트 설정으로 교체하세요
-  try {
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    const totalRef = ref(db, 'visitors/total');
-    const todayRef = ref(db, 'visitors/daily/' + today);
-    runTransaction(totalRef, v => (v || 0) + 1);
-    runTransaction(todayRef, v => (v || 0) + 1);
-    onValue(totalRef, snap => {
-      const el = document.getElementById('totalCount');
-      if (el) el.textContent = (snap.val() || 0).toLocaleString() + '명';
-    });
-    onValue(todayRef, snap => {
-      const el = document.getElementById('todayCount');
-      if (el) el.textContent = (snap.val() || 0).toLocaleString() + '명';
-    });
-  } catch(e) {
-    console.warn('Firebase 미설정 - firebaseConfig를 교체하세요');
-  }
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const totalRef = db.ref('visitors/total');
+  const todayRef = db.ref('visitors/daily/' + today);
+
+  // 방문자 카운트 증가
+  totalRef.transaction(v => (v || 0) + 1);
+  todayRef.transaction(v => (v || 0) + 1);
+
+  // 실시간 표시
+  totalRef.：('value', snap => {
+    const el = document.getElementById('totalCount');
+    if (el) el.textContent = (snap.val() || 0).toLocaleString() + '명';
+  });
+  todayRef.：('value', snap => {
+    const el = document.getElementById('todayCount');
+    if (el) el.textContent = (snap.val() || 0).toLocaleString() + '명';
+  });
 </script>
 <style>
   :root {
@@ -286,7 +284,7 @@
 <!-- 시장 현황 바 -->
 <div class="tradingview-widget-container" style="height:46px;background:var(--surface);border-bottom:1px solid var(--border);">
   <div class="tradingview-widget-container__widget"></div>
-  <script 입력="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
   {"symbols":[{"description":"KOSPI","proName":"KRX:KOSPI"},{"description":"KOSDAQ","proName":"KRX:KOSDAQ"},{"description":"S&P500","proName":"FOREXCOM:SPXUSD"},{"description":"나스닥","proName":"FOREXCOM:NSXUSD"},{"description":"BTC/USD","proName":"BITSTAMP:BTCUSD"},{"description":"ETH/USD","proName":"BITSTAMP:ETHUSD"},{"description":"USD/KRW","proName":"FX_IDC:USDKRW"},{"description":"VIX","proName":"CAPITALCOM:VIX"}],"showSymbolLogo":true,"isTransparent":true,"displayMode":"adaptive","colorTheme":"light","locale":"kr"}
   </script>
 </div>
@@ -302,8 +300,8 @@
       <a href="#domestic">국내주식</a>
       <a href="#us">미국주식</a>
       <a href="#coin">코인</a>
-      <a href="calc.html">계산기</a>
-      <a href="news.html">경제뉴스</a>
+      <a href="calc.html">🧮 계산기</a>
+      <a href="news.html">📰 경제뉴스</a>
       <a href="#community">소통방</a>
       <a href="#faq">FAQ</a>
     </nav>
