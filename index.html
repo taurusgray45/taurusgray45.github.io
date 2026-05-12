@@ -72,12 +72,12 @@
 
   /* ── 데스크탑 네비 ── */
   nav { display:flex; align-items:center; gap:2px; justify-content:center; }
-  nav a { color:var(--ink3); text-decoration:none; font-size:0.875rem; font-weight:500; padding:6px 12px; border-radius:8px; transition:all 0.15s; white-space:지금rap; }
+  nav a { color:var(--ink3); text-decoration:none; font-size:0.875rem; font-weight:500; padding:6px 12px; border-radius:8px; transition:all 0.15s; white-space:nowrap; }
   nav a:hover, nav a.active { background:var(--bg); color:var(--ink); }
   nav a.active { font-weight:700; color:var(--blue); background:var(--blue-light); }
 
   /* ── 다크모드 토글 ── */
-  .dark-toggle { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:5px 12px; cursor:pointer; font-size:0.78rem; font-weight:600; color:var(--ink3); display:flex; align-items:center; gap:6px; transition:all 0.15s; flex-shrink:0; white-space:지금rap; }
+  .dark-toggle { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:5px 12px; cursor:pointer; font-size:0.78rem; font-weight:600; color:var(--ink3); display:flex; align-items:center; gap:6px; transition:all 0.15s; flex-shrink:0; white-space:nowrap; }
   .dark-toggle:hover { border-color:var(--blue); color:var(--blue); }
 
   /* ── 햄버거 메뉴 (모바일) ── */
@@ -122,7 +122,7 @@
   .card-desc [data-tip]:hover::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; font-size:0.75rem; padding:7px 10px; border-radius:8px; white-space:normal; max-width:220px; z-index:100; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
   .card-desc [data-tip]:hover::before { content:''; position:absolute; bottom:calc(100% + 1px); left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--ink); z-index:101; pointer-events:none; }
   .card iframe { width:100%; display:block; border:none; }
-  .print-btn { background:none; border:1px solid var(--border); border-radius:8px; padding:4px 10px; font-size:0.72rem; font-weight:600; color:var(--ink3); cursor:pointer; display:flex; align-items:center; gap:4px; transition:all 0.15s; white-space:지금rap; }
+  .print-btn { background:none; border:1px solid var(--border); border-radius:8px; padding:4px 10px; font-size:0.72rem; font-weight:600; color:var(--ink3); cursor:pointer; display:flex; align-items:center; gap:4px; transition:all 0.15s; white-space:nowrap; }
   .print-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
 
   /* ── 그리드 ── */
@@ -158,7 +158,7 @@
   .timeline-dot-wrap { display:flex; flex-direction:column; align-items:center; flex-shrink:0; padding-top:3px; }
   .timeline-dot { width:10px; height:10px; background:var(--blue); border-radius:50%; border:2px solid var(--surface); box-shadow:0 0 0 2px var(--blue); }
   .timeline-dot.gray { background:var(--ink4); box-shadow:0 0 0 2px var(--ink4); }
-  .timeline-date { font-size:0.72rem; font-weight:600; color:var(--ink4); white-space:지금rap; flex-shrink:0; padding-top:1px; min-width:52px; }
+  .timeline-date { font-size:0.72rem; font-weight:600; color:var(--ink4); white-space:nowrap; flex-shrink:0; padding-top:1px; min-width:52px; }
   .timeline-content-title { font-size:0.875rem; font-weight:600; color:var(--ink); margin-bottom:3px; }
   .timeline-content-sub { font-size:0.78rem; color:var(--ink3); }
   .timeline-tag { display:inline-block; font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:4px; margin-left:6px; vertical-align:middle; }
@@ -203,7 +203,7 @@
   footer a { color:var(--ink3); text-decoration:underline; }
 
   /* ── 애니메이션 ── */
-  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } 까지 { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
   .hero h1 { animation:fadeUp 0.45s ease both; }
   .hero-sub { animation:fadeUp 0.45s 0.08s ease both; }
   .hero-stats { animation:fadeUp 0.45s 0.14s ease both; }
@@ -242,7 +242,7 @@
 <!-- 시장 현황 바 (TradingView Ticker Tape) -->
 <div class="tradingview-widget-container" style="height:46px; background:var(--surface); border-bottom:1px solid var(--border);">
   <div class="tradingview-widget-container__widget"></div>
-  <script 입력="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
   {
     "symbols": [
       {"description":"KOSPI","proName":"KRX:KOSPI"},
@@ -634,24 +634,18 @@
   <p><strong>고려대 재학생 트레이더</strong> · 본 사이트는 투자 자문을 제공하지 않습니다.</p>
   <p>모든 투자 판단의 책임은 투자자 본인에게 있습니다.</p>
   <p style="margin-top:6px;">문의: <a href="mailto:korea.trader.y@gmail.com">korea.trader.y@gmail.com</a></p>
-<!-- 방문자 수 -->
-<div class="visitor-footer">
-
-  <div class="visitor-item">
-    <span class="visitor-label">📊 실시간 방문자</span>
+  <div class="visitor-footer">
+    <div class="visitor-item">
+      <span class="visitor-label">👁 오늘 방문자</span>
+      <span class="visitor-num" id="todayCount">—</span>
+    </div>
+    <div class="visitor-divider"></div>
+    <div class="visitor-item">
+      <span class="visitor-label">📊 누적 방문자</span>
+      <span class="visitor-num" id="totalCount">—</span>
+    </div>
+    <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Ftaurusgray45.github.io" id="hitsImg" style="display:none;" alt="hits">
   </div>
-
-  <img
-    src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Ftaurusgray45.github.io&count_bg=%233182F6&title_bg=%23191F28&icon=github.svg&icon_color=%23FFFFFF&title=VISIT&edge_flat=false"
-    alt="hits"
-    style="
-      height:28px;
-      border-radius:8px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.08);
-    "
-  >
-
-</div>
 </footer>
 
 <!-- 맨 위로 버튼 -->
