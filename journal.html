@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<script type="module">
+<script 입력="module">
 import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -65,7 +65,7 @@ function showApp(user) {
 }
 
 /* ── Google 로그인 ── */
-const loginGoogle = async () => {
+window.loginGoogle = async () => {
   try {
     setAuthLoading(true);
     await signInWithPopup(auth, gProvider);
@@ -73,7 +73,7 @@ const loginGoogle = async () => {
 };
 
 /* ── 이메일 로그인 / 회원가입 ── */
-const loginEmail = async () => {
+window.loginEmail = async () => {
   const email = document.getElementById('email-input').value.trim();
   const pw    = document.getElementById('pw-input').value;
   const mode  = document.getElementById('auth-mode').dataset.mode;
@@ -97,14 +97,14 @@ const loginEmail = async () => {
   } finally { setAuthLoading(false); }
 };
 
-const toggleAuthMode = () => {
+window.toggleAuthMode = () => {
   const btn  = document.getElementById('auth-mode');
   const isLogin = btn.dataset.mode === 'login';
   btn.dataset.mode = isLogin ? 'signup' : 'login';
   document.getElementById('email-btn-text').textContent = isLogin ? '회원가입' : '로그인';
   document.getElementById('auth-switch-text').innerHTML = isLogin
-    ? '이미 계정이 있으신가요? <a onclick="toggleAuthMode()">로그인</a>'
-    : '계정이 없으신가요? <a onclick="toggleAuthMode()">회원가입</a>';
+    ? '이미 계정이 있으신가요? <a id="btn-switch">로그인</a>'
+    : '계정이 없으신가요? <a id="btn-switch-signup">회원가입</a>';
   document.getElementById('auth-title').textContent = isLogin ? '회원가입' : '로그인';
 };
 
@@ -119,7 +119,7 @@ function showAuthError(msg) {
 }
 
 /* ── 로그아웃 ── */
-const logout = () => signOut(auth);
+window.logout = () => signOut(auth);
 
 /* ── Firestore CRUD ── */
 async function loadTrades() {
@@ -145,7 +145,7 @@ async function loadTrades() {
   }
 }
 
-const addTrade = async () => {
+window.addTrade = async () => {
   if (!currentUser) return;
   const t = {
     uid:    currentUser.uid,
@@ -171,7 +171,7 @@ const addTrade = async () => {
   } catch(e) { showToast('저장 실패: ' + e.message, 'error'); }
 };
 
-const deleteTrade = async (id) => {
+window.deleteTrade = async (id) => {
   if (!confirm('이 기록을 삭제할까요?')) return;
   try {
     await deleteDoc(doc(db, 'trades', id));
@@ -400,18 +400,18 @@ function showToast(msg, type = 'success') {
   el.className = 'toast show ' + type;
   setTimeout(() => el.classList.remove('show'), 3000);
 }
-const openModal = () => { document.getElementById('modal').classList.add('open'); };
-const closeModal = () => { document.getElementById('modal').classList.remove('open'); };
+window.openModal = () => { document.getElementById('modal').classList.add('open'); };
+window.closeModal = () => { document.getElementById('modal').classList.remove('open'); };
 
 /* ── 탭 전환 ── */
-const toggleChartType = (type) => {
+window.toggleChartType = (type) => {
   pnlChartType = type;
   document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`[data-ctype="${type}"]`).classList.add('active');
   renderCharts();
 };
 
-const switchTab = id => {
+window.switchTab = id => {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('pane-' + id).classList.add('active');
@@ -419,16 +419,45 @@ const switchTab = id => {
   if (id === 'dashboard') renderCharts();
 };
 
-/* ── 날짜 기본값 ── */
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-});
 
-/* ── 전역 노출 (module scope → window) ── */
-Object.assign(window, {
-  loginGoogle, loginEmail, toggleAuthMode, logout,
-  addTrade, deleteTrade, openModal, closeModal,
-  switchTab, toggleChartType
+
+/* ── DOM 이벤트 바인딩 (onclick 대체) ── */
+document.addEventListener('DOMContentLoaded', () => {
+  // 로그인
+  const gBtn = document.getElementById('btn-google');
+  const eBtn = document.getElementById('btn-email');
+  const swBtn = document.getElementById('btn-switch');
+  if(gBtn) gBtn.addEventListener('click', window.loginGoogle);
+  if(eBtn) eBtn.addEventListener('click', window.loginEmail);
+  if(swBtn) swBtn.addEventListener('click', window.toggleAuthMode);
+  // pw 엔터
+  const pw = document.getElementById('pw-input');
+  if(pw) pw.addEventListener('keydown', e => { if(e.key==='Enter') window.loginEmail(); });
+  // 로그아웃
+  const lo = document.getElementById('btn-logout');
+  if(lo) lo.addEventListener('click', window.logout);
+  // 탭
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => window.switchTab(btn.dataset.tab));
+  });
+  // 차트 토글
+  document.querySelectorAll('[data-ctype]').forEach(btn => {
+    btn.addEventListener('click', () => window.toggleChartType(btn.dataset.ctype));
+  });
+  // 추가 버튼
+  const addBtn = document.getElementById('btn-add');
+  if(addBtn) addBtn.addEventListener('click', window.openModal);
+  // 모달 저장/취소
+  const saveBtn   = document.getElementById('btn-save');
+  const cancelBtn = document.getElementById('btn-cancel');
+  if(saveBtn)   saveBtn.addEventListener('click', window.addTrade);
+  if(cancelBtn) cancelBtn.addEventListener('click', window.closeModal);
+  // 모달 외부 클릭
+  const modal = document.getElementById('modal');
+  if(modal) modal.addEventListener('click', e => { if(e.target===modal) window.closeModal(); });
+  // 날짜 기본값
+  const fd = document.getElementById('f-date');
+  if(fd) fd.value = new Date().toISOString().split('T')[0];
 });
 </script>
 
@@ -830,7 +859,7 @@ tbody tr:hover { background: var(--bg2); }
     <h1 class="login-title">매매일지</h1>
     <p class="login-sub">고려대 재학생 트레이더 · 본인만 볼 수 있는 개인 투자 기록</p>
 
-    <button class="google-btn" onclick="loginGoogle()">
+    <button class="google-btn" id="btn-google">
       <svg class="google-icon" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -844,14 +873,14 @@ tbody tr:hover { background: var(--bg2); }
     <div id="auth-title">로그인</div>
     <input class="form-input" id="email-input" type="email" placeholder="이메일 주소">
     <input class="form-input" id="pw-input" type="password" placeholder="비밀번호"
-           onkeydown="if(event.key==='Enter') loginEmail()">
-    <button class="email-btn" onclick="loginEmail()">
+           >
+    <button class="email-btn" id="btn-email">
       <span id="email-btn-text">로그인</span>
     </button>
     <div id="auth-mode" data-mode="login" style="display:none"></div>
     <div class="auth-error" id="auth-error"></div>
     <div class="auth-switch" id="auth-switch-text">
-      계정이 없으신가요? <a onclick="toggleAuthMode()">회원가입</a>
+      계정이 없으신가요? <a id="btn-switch-signup">회원가입</a>
     </div>
   </div>
 </div>
@@ -874,13 +903,13 @@ tbody tr:hover { background: var(--bg2); }
           <div class="uemail" id="user-email">-</div>
         </div>
       </div>
-      <button class="logout-btn" onclick="logout()">로그아웃</button>
+      <button class="logout-btn" id="btn-logout">로그아웃</button>
     </div>
   </header>
 
   <div class="tab-bar">
-    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">대시보드</button>
-    <button class="tab-btn" data-tab="journal" onclick="switchTab('journal')">매매일지</button>
+    <button class="tab-btn active" data-tab="dashboard" >대시보드</button>
+    <button class="tab-btn" data-tab="journal" >매매일지</button>
   </div>
 
   <!-- 대시보드 -->
@@ -918,8 +947,8 @@ tbody tr:hover { background: var(--bg2); }
       <div class="dash-header">
         <div class="dash-title">누적 손익 추이</div>
         <div class="chart-toggle">
-          <button class="chart-toggle-btn active" data-ctype="line" onclick="toggleChartType('line')">선 그래프</button>
-          <button class="chart-toggle-btn" data-ctype="bar" onclick="toggleChartType('bar')">막대 그래프</button>
+          <button class="chart-toggle-btn active" data-ctype="line" >선 그래프</button>
+          <button class="chart-toggle-btn" data-ctype="bar" >막대 그래프</button>
         </div>
       </div>
       <div class="chart-card" style="margin-bottom:12px;">
@@ -946,7 +975,7 @@ tbody tr:hover { background: var(--bg2); }
     <div class="app-body">
       <div class="journal-header">
         <div class="journal-title">매매 기록</div>
-        <button class="add-btn" onclick="openModal()">+ 기록 추가</button>
+        <button class="add-btn" id="btn-add">+ 기록 추가</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -967,7 +996,7 @@ tbody tr:hover { background: var(--bg2); }
 </div>
 
 <!-- 모달 -->
-<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+<div class="modal-overlay" id="modal" id="modal-overlay">
   <div class="modal-box">
     <div class="modal-eyebrow">New Trade</div>
     <div class="modal-title">매매 기록 추가</div>
@@ -998,8 +1027,8 @@ tbody tr:hover { background: var(--bg2); }
     <div class="field"><label>수수료 (선택)</label><input 입력="number" id="f-fee" placeholder="0" min="0"></div>
 
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">취소</button>
-      <button class="btn-save" onclick="addTrade()">저장하기</button>
+      <button class="btn-cancel" id="btn-cancel">취소</button>
+      <button class="btn-save" id="btn-save">저장하기</button>
     </div>
   </div>
 </div>
