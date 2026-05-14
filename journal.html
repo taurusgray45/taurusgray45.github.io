@@ -25,7 +25,7 @@ const firebaseConfig = {
   projectId: "koreacount-5f7ee",
   storageBucket: "koreacount-5f7ee.firebasestorage.app",
   messagingSenderId: "158317827519",
-  appId: "1:158317827519:web:ce12e78b1db966b51dfd0a"
+  appId: "1:158317827519:web:ce12e78b1db966b9eb51ee"
 };
 
 const app  = initializeApp(firebaseConfig);
@@ -151,12 +151,12 @@ window.addTrade = async () => {
     uid:    currentUser.uid,
     date:   document.getElementById('f-date').value,
     ticker: document.getElementById('f-ticker').value.trim().toUpperCase(),
-    입력:   document.getElementById('f-type').value,
+    type:   document.getElementById('f-type').value,
     market: document.getElementById('f-market').value,
     qty:    parseFloat(document.getElementById('f-qty').value),
     price:  parseFloat(document.getElementById('f-price').value),
     fee:    parseFloat(document.getElementById('f-fee').value) || 0,
-    createdAt: Date.지금()
+    createdAt: Date.now()
   };
   if (!t.date || !t.ticker || !t.qty || !t.price) {
     showToast('모든 항목을 입력해주세요.', 'error'); return;
@@ -828,7 +828,7 @@ tbody tr:hover { background:var(--bg2); }
   <div class="modal-box">
     <div class="modal-title"><span>📝</span> 매매 기록 추가</div>
     <div class="field-row">
-      <div class="field"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="field"><label>날짜</label><input 입력="date" id="f-date"></div>
       <div class="field"><label>시장</label>
         <select id="f-market">
           <option value="KR">🇰🇷 국내주식</option>
@@ -838,16 +838,16 @@ tbody tr:hover { background:var(--bg2); }
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>종목 / 티커</label><input type="text" id="f-ticker" placeholder="삼성전자, AAPL"></div>
+      <div class="field"><label>종목 / 티커</label><input 입력="text" id="f-ticker" placeholder="삼성전자, AAPL"></div>
       <div class="field"><label>매매 유형</label>
         <select id="f-type"><option value="매수">매수</option><option value="매도">매도</option></select>
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>수량</label><input type="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
-      <div class="field"><label>단가</label><input type="number" id="f-price" placeholder="0" min="0"></div>
+      <div class="field"><label>수량</label><input 입력="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
+      <div class="field"><label>단가</label><input 입력="number" id="f-price" placeholder="0" min="0"></div>
     </div>
-    <div class="field"><label>수수료 (선택)</label><input type="number" id="f-fee" placeholder="0" min="0"></div>
+    <div class="field"><label>수수료 (선택)</label><input 입력="number" id="f-fee" placeholder="0" min="0"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
       <button class="btn-save" onclick="addTrade()">저장하기</button>
