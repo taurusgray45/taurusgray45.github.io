@@ -426,10 +426,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // 로그인
   const gBtn = document.getElementById('btn-google');
   const eBtn = document.getElementById('btn-email');
-  const swBtn = document.getElementById('btn-switch');
   if(gBtn) gBtn.addEventListener('click', window.loginGoogle);
   if(eBtn) eBtn.addEventListener('click', window.loginEmail);
-  if(swBtn) swBtn.addEventListener('click', window.toggleAuthMode);
+  // 이벤트 위임: auth-switch 클릭
+  const switchWrap = document.getElementById('auth-switch-text');
+  if(switchWrap) switchWrap.addEventListener('click', window.toggleAuthMode);
   // pw 엔터
   const pw = document.getElementById('pw-input');
   if(pw) pw.addEventListener('keydown', e => { if(e.key==='Enter') window.loginEmail(); });
