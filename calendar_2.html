@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>경제 일정 · 고려대 재학생 트레이더</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:#f2f4f6; --surface:#ffffff; --surface2:#f8f9fa;
+    --ink:#191f28; --ink2:#333d4b; --ink3:#6b7684; --ink4:#b0b8c1;
+    --blue:#3182f6; --blue-light:#ebf2fe;
+    --red:#f04452; --green:#05b994;
+    --border:#e5e8eb; --radius:16px; --radius-sm:10px;
+    --shadow:0 2px 12px rgba(0,0,0,0.06);
+    --banner-bg:#191f28; --banner-text:#e5e8eb;
+    --yellow:#f5a623; --yellow-light:#fef9ec;
+    --purple:#7b5cf0; --purple-light:#f0edfe;
+  }
+  [data-theme="dark"] {
+    --bg:#111317; --surface:#1e2128; --surface2:#262b33;
+    --ink:#f0f2f4; --ink2:#cdd1d7; --ink3:#8b95a1; --ink4:#4e5968;
+    --blue-light:#1a2d4f; --border:#2e333d;
+    --banner-bg:#0a0c0f; --banner-text:#8b95a1;
+    --shadow:0 2px 12px rgba(0,0,0,0.3);
+    --yellow-light:#2a2210; --purple-light:#1a1530;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background 0.25s,color 0.25s;}
+
+  /* 스크롤 진행 바 */
+  #progress-bar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--blue);z-index:9999;transition:width 0.1s linear;border-radius:0 2px 2px 0;}
+
+  /* 상단 배너 */
+  .top-banner{background:var(--banner-bg);color:var(--banner-text);text-align:center;padding:9px 1rem;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:10px;}
+  .top-banner a{color:var(--blue);text-decoration:none;font-weight:600;}
+  .banner-dot{width:6px;height:6px;background:var(--green);border-radius:50%;flex-shrink:0;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.85);}}
+
+  /* 헤더 */
+  header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;height:56px;transition:background 0.25s,border-color 0.25s;}
+  .header-inner{max-width:1200px;margin:0 auto;padding:0 2rem;height:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;}
+  .logo{font-size:1rem;font-weight:700;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:8px;letter-spacing:-0.3px;flex-shrink:0;}
+  .logo-dot{width:8px;height:8px;background:var(--blue);border-radius:50%;}
+  .breadcrumb{display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--ink4);}
+  .breadcrumb a{color:var(--ink3);text-decoration:none;font-weight:500;}
+  .breadcrumb a:hover{color:var(--blue);}
+  .breadcrumb-sep{color:var(--ink4);}
+  .breadcrumb-cur{color:var(--blue);font-weight:600;}
+  .header-right{display:flex;align-items:center;gap:6px;justify-self:end;}
+  .dark-toggle{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--ink3);display:flex;align-items:center;gap:6px;transition:all 0.15s;flex-shrink:0;white-space:nowrap;}
+  .dark-toggle:hover{border-color:var(--blue);color:var(--blue);}
+
+  /* 햄버거 */
+  .hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px;color:var(--ink);flex-direction:column;gap:5px;}
+  .hamburger span{display:block;width:22px;height:2px;background:currentColor;border-radius:2px;transition:all 0.25s;}
+
+  /* 히어로 */
+  .hero{background:var(--surface);border-bottom:1px solid var(--border);padding:48px 2rem 40px;text-align:center;transition:background 0.25s,border-color 0.25s;}
+  .hero-eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--blue-light);color:var(--blue);font-size:0.78rem;font-weight:600;padding:5px 14px;border-radius:20px;margin-bottom:18px;}
+  .hero h1{font-size:clamp(1.6rem,3.5vw,2.3rem);font-weight:700;color:var(--ink);line-height:1.35;letter-spacing:-0.5px;margin-bottom:12px;}
+  .hero h1 em{font-style:normal;color:var(--blue);}
+  .hero-sub{font-size:0.92rem;color:var(--ink3);max-width:520px;margin:0 auto 20px;line-height:1.85;}
+  .hero-meta{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;font-size:0.78rem;color:var(--ink4);}
+  .hero-meta span{display:flex;align-items:center;gap:5px;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  .hero h1{animation:fadeUp 0.4s ease both;}
+  .hero-sub{animation:fadeUp 0.4s 0.07s ease both;}
+
+  /* 레이아웃 */
+  .container{max-width:1200px;margin:0 auto;padding:0 2rem;}
+  .section{padding:40px 0;}
+  .section-label{font-size:0.72rem;font-weight:700;color:var(--blue);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;}
+  .section-title{font-size:1.25rem;font-weight:700;color:var(--ink);letter-spacing:-0.3px;margin-bottom:20px;}
+
+  /* 탭 */
+  .tab-bar{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:24px;width:fit-content;}
+  .tab-btn{padding:7px 18px;border-radius:8px;border:none;background:none;font-size:0.84rem;font-weight:600;color:var(--ink3);cursor:pointer;transition:all 0.15s;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;}
+  .tab-btn.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+  .tab-btn:hover:not(.active){color:var(--ink);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  /* 카드 */
+  .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:16px;transition:background 0.25s,border-color 0.25s;}
+  .card:last-child{margin-bottom:0;}
+  .card-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .card-title{font-size:0.9rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .card-dot{width:6px;height:6px;background:var(--blue);border-radius:50%;flex-shrink:0;}
+  .card-desc{padding:12px 22px;font-size:0.83rem;color:var(--ink3);line-height:1.8;border-bottom:1px solid var(--border);background:var(--surface2);}
+  .card iframe{width:100%;display:block;border:none;}
+
+  /* 그리드 */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .grid-2 .card{margin-bottom:0;}
+  @media(max-width:720px){.grid-2{grid-template-columns:1fr;}}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media(max-width:900px){.grid-3{grid-template-columns:1fr 1fr;}}
+  @media(max-width:580px){.grid-3{grid-template-columns:1fr;}}
+  .grid-3 .card{margin-bottom:0;}
+
+  /* AI 요약 카드 */
+  .ai-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+  .ai-card-top{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .ai-badge{display:inline-flex;align-items:center;gap:6px;background:var(--purple-light);color:var(--purple);font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;}
+  .ai-title{font-size:0.9rem;font-weight:700;color:var(--ink);}
+  .ai-btn{display:inline-flex;align-items:center;gap:6px;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.15s;}
+  .ai-btn:hover{background:#1a6de8;transform:translateY(-1px);}
+  .ai-btn:disabled{background:var(--ink4);cursor:not-allowed;transform:none;}
+  .ai-body{padding:22px;}
+  .ai-placeholder{text-align:center;padding:28px 0;color:var(--ink4);font-size:0.85rem;}
+  .ai-placeholder-icon{font-size:2rem;margin-bottom:8px;}
+  .ai-result{font-size:0.875rem;color:var(--ink2);line-height:1.9;}
+  .ai-result h3{font-size:0.82rem;font-weight:700;color:var(--blue);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.04em;}
+  .ai-result h3:first-child{margin-top:0;}
+  .ai-result p{margin-bottom:10px;padding-left:12px;border-left:2px solid var(--border);}
+  .ai-result ul{list-style:none;margin-bottom:10px;}
+  .ai-result ul li{padding:5px 0 5px 18px;position:relative;border-bottom:1px solid var(--border);font-size:0.83rem;color:var(--ink2);}
+  .ai-result ul li:last-child{border-bottom:none;}
+  .ai-result ul li::before{content:'▸';position:absolute;left:0;color:var(--blue);}
+  .ai-result .highlight{display:inline-block;background:var(--yellow-light);color:var(--ink);padding:1px 7px;border-radius:4px;font-weight:600;font-size:0.82rem;}
+  .ai-result .tag-up{background:#e8faf5;color:var(--green);padding:1px 7px;border-radius:4px;font-size:0.75rem;font-weight:700;}
+  .ai-result .tag-down{background:#fff0f1;color:var(--red);padding:1px 7px;border-radius:4px;font-size:0.75rem;font-weight:700;}
+  .ai-result .tag-warn{background:var(--yellow-light);color:var(--yellow);padding:1px 7px;border-radius:4px;font-size:0.75rem;font-weight:700;}
+  .ai-loading{display:flex;align-items:center;gap:10px;color:var(--ink3);font-size:0.85rem;padding:16px 0;}
+  .ai-spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .ai-timestamp{font-size:0.72rem;color:var(--ink4);margin-top:14px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;}
+
+  /* 이벤트 리스트 */
+  .event-list{display:flex;flex-direction:column;}
+  .event-item{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--border);}
+  .event-item:last-child{border-bottom:none;}
+  .event-date-block{min-width:64px;flex-shrink:0;}
+  .event-date{font-size:0.68rem;font-weight:700;color:var(--ink4);text-transform:uppercase;}
+  .event-time{font-size:0.8rem;font-weight:700;color:var(--ink);margin-top:2px;}
+  .event-impact{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+  .impact-high{background:var(--red);}
+  .impact-mid{background:var(--yellow);}
+  .impact-low{background:var(--green);}
+  .event-body{flex:1;}
+  .event-name{font-size:0.875rem;font-weight:600;color:var(--ink);margin-bottom:3px;}
+  .event-country{font-size:0.72rem;color:var(--ink4);margin-bottom:4px;}
+  .event-vals{display:flex;gap:12px;flex-wrap:wrap;}
+  .event-val{font-size:0.76rem;}
+  .event-val-label{color:var(--ink4);margin-right:3px;}
+  .event-val-num{font-weight:700;color:var(--ink2);}
+  .event-val-num.up{color:var(--green);}
+  .event-val-num.down{color:var(--red);}
+  .impact-legend{display:flex;gap:16px;align-items:center;margin-bottom:16px;font-size:0.76rem;color:var(--ink3);}
+  .impact-legend-item{display:flex;align-items:center;gap:5px;}
+  .impact-dot{width:8px;height:8px;border-radius:50%;}
+
+  /* 필터 바 */
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+  .filter-label{font-size:0.78rem;color:var(--ink3);font-weight:600;}
+  .filter-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:0.76rem;font-weight:600;color:var(--ink3);cursor:pointer;transition:all 0.15s;font-family:'Noto Sans KR',sans-serif;}
+  .filter-chip.active{background:var(--blue-light);border-color:var(--blue);color:var(--blue);}
+  .filter-chip:hover:not(.active){border-color:var(--blue);color:var(--blue);}
+
+  /* 주요 발표 배지 */
+  .key-event-badge{display:inline-flex;align-items:center;gap:4px;background:var(--yellow-light);color:var(--yellow);font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;}
+
+  /* 분석 요약 박스 */
+  .summary-box{background:var(--blue-light);border:1px solid rgba(49,130,246,0.2);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:16px;}
+  .summary-box-title{font-size:0.8rem;font-weight:700;color:var(--blue);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .summary-box-body{font-size:0.83rem;color:var(--ink2);line-height:1.8;}
+
+  /* 구분선 */
+  .divider{height:1px;background:var(--border);}
+
+  /* 맨 위로 */
+  .float-btns{position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:300;}
+  .float-btn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 16px rgba(0,0,0,0.18);transition:all 0.25s;opacity:0;transform:translateY(10px);}
+  .float-btn.visible{opacity:1;transform:translateY(0);}
+  #scroll-top{background:var(--ink);color:#fff;}
+  #scroll-top:hover{background:var(--blue);transform:translateY(-2px);}
+
+  /* 푸터 */
+  footer{background:var(--surface);border-top:1px solid var(--border);padding:28px 2rem;text-align:center;transition:background 0.25s,border-color 0.25s;}
+  footer p{font-size:0.78rem;color:var(--ink4);line-height:1.8;}
+  footer a{color:var(--ink3);text-decoration:underline;}
+
+  /* 모바일 */
+  @media(max-width:700px){
+    .hamburger{display:flex;}
+    .hero{padding:32px 1.2rem 28px;}
+    .section{padding:28px 0;}
+    .container{padding:0 1.2rem;}
+    .float-btns{bottom:18px;right:18px;}
+    .breadcrumb{display:none;}
+    .tab-bar{width:100%;}
+    .tab-btn{flex:1;text-align:center;padding:7px 8px;font-size:0.78rem;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 스크롤 진행 바 -->
+<div id="progress-bar"></div>
+
+<!-- 상단 배너 -->
+<div class="top-banner">
+  <div class="banner-dot"></div>
+  경제 일정 · 무료 AI 요약 제공 ·
+  <a href="index.html">← 메인으로 돌아가기</a>
+</div>
+
+<!-- 시장 현황 바 -->
+<div class="tradingview-widget-container" style="height:46px;background:var(--surface);border-bottom:1px solid var(--border);">
+  <div class="tradingview-widget-container__widget"></div>
+  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+  {"symbols":[{"description":"KOSPI","proName":"KRX:KOSPI"},{"description":"KOSDAQ","proName":"KRX:KOSDAQ"},{"description":"S&P500","proName":"FOREXCOM:SPXUSD"},{"description":"나스닥","proName":"FOREXCOM:NSXUSD"},{"description":"BTC/USD","proName":"BITSTAMP:BTCUSD"},{"description":"ETH/USD","proName":"BITSTAMP:ETHUSD"},{"description":"USD/KRW","proName":"FX_IDC:USDKRW"},{"description":"VIX","proName":"CAPITALCOM:VIX"}],"showSymbolLogo":true,"isTransparent":true,"displayMode":"adaptive","colorTheme":"light","locale":"kr"}
+  </script>
+</div>
+
+<!-- 헤더 -->
+<header>
+  <div class="header-inner">
+    <a class="logo" href="index.html"><div class="logo-dot"></div>고려대 재학생 트레이더</a>
+    <div class="breadcrumb">
+      <a href="index.html">홈</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-cur">📅 경제 일정</span>
+    </div>
+    <div class="header-right">
+      <button class="dark-toggle" onclick="toggleDark()">
+        <span class="toggle-icon">🌙</span>
+        <span id="toggleLabel">다크모드</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- 히어로 -->
+<div class="hero">
+  <div class="hero-eyebrow">📅 경제 일정 & 이벤트</div>
+  <h1>이번 주 <em>주요 경제 발표</em>를<br>한눈에 확인하세요</h1>
+  <p class="hero-sub">FOMC, CPI, 고용지수 등 시장을 움직이는 핵심 지표들을 실시간으로 제공합니다.<br>AI 요약으로 복잡한 지표도 쉽게 이해할 수 있어요.</p>
+  <div class="hero-meta">
+    <span>🔄 트레이딩뷰 실시간 연동</span>
+    <span>🤖 AI 요약 분석 제공</span>
+    <span>🌍 글로벌 주요 지표 포함</span>
+  </div>
+</div>
+
+<!-- 메인 콘텐츠 -->
+<div class="section">
+  <div class="container">
+
+    <!-- 탭 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('calendar')">📅 경제 캘린더</button>
+      <button class="tab-btn" onclick="switchTab('key-events')">🔥 주요 이벤트</button>
+    </div>
+
+    <!-- 탭 1: 경제 캘린더 (트레이딩뷰 공식 위젯) -->
+    <div class="tab-content active" id="tab-calendar">
+      <div class="section-label">Economic Calendar</div>
+      <div class="section-title">경제 캘린더</div>
+
+      <div class="summary-box">
+        <div class="summary-box-title">💡 보는 방법</div>
+        <div class="summary-box-body">빨간 아이콘은 <strong>고영향(High Impact)</strong> 지표로 시장 변동성이 큽니다. 수치 발표 전후 포지션 관리에 주의가 필요합니다.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-dot"></div>글로벌 경제 캘린더 (트레이딩뷰)</div>
+          <span style="font-size:0.75rem;color:var(--ink4);">실시간 업데이트</span>
+        </div>
+        <!-- TradingView Economic Calendar Widget -->
+        <div class="tradingview-widget-container" style="height:600px;overflow:hidden;">
+          <iframe scrolling="no" allowtransparency="true" frameborder="0" src="https://s.tradingview.com/embed-widget/events/?locale=kr#%7B%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Afalse%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22600%22%2C%22importanceFilter%22%3A%22-1%2C0%2C1%22%2C%22currencyFilter%22%3A%22USD%2CEUR%2CJPY%2CGBP%2CCNY%2CKRW%22%7D" style="box-sizing:border-box;height:100%;width:100%;border:none;display:block;"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- 탭 2: 주요 이벤트 (직접 구성) -->
+    <div class="tab-content" id="tab-key-events">
+      <div class="section-label">Key Events</div>
+      <div class="section-title">이번 주 주요 이벤트 <span style="font-size:0.78rem;color:var(--ink4);font-weight:400;" id="week-range-label"></span></div>
+
+      <div class="filter-bar">
+        <span class="filter-label">필터:</span>
+        <button class="filter-chip active" onclick="filterEvents('all', this)">전체</button>
+        <button class="filter-chip" onclick="filterEvents('us', this)">🇺🇸 미국</button>
+        <button class="filter-chip" onclick="filterEvents('kr', this)">🇰🇷 한국</button>
+        <button class="filter-chip" onclick="filterEvents('eu', this)">🇪🇺 유럽</button>
+        <button class="filter-chip" onclick="filterEvents('high', this)">🔴 고영향만</button>
+      </div>
+
+      <div class="impact-legend">
+        <span class="impact-legend-item"><span class="impact-dot impact-high"></span>고영향</span>
+        <span class="impact-legend-item"><span class="impact-dot impact-mid"></span>중영향</span>
+        <span class="impact-legend-item"><span class="impact-dot impact-low"></span>저영향</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-dot"></div>주요 경제 지표 일정</div>
+          <span style="font-size:0.73rem;color:var(--ink4);">한국시간(KST) 기준</span>
+        </div>
+        <div style="padding:0 22px;">
+          <div class="event-list" id="event-list">
+            <!-- JS로 동적 렌더링 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 공식 Forex Factory iframe 대체: Investing.com 캘린더 -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-title"><div class="card-dot"></div>경제 캘린더 (Investing.com)</div>
+        </div>
+        <div class="card-desc">Investing.com에서 제공하는 실시간 경제 캘린더입니다. 더 상세한 지표별 예측·이전값·실제값을 확인할 수 있어요.</div>
+        <iframe src="https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&importance=3&features=datepicker,timezone,filters&countries=5,35,37,4,36,6,110,43,25,40&calType=week&timeZone=71&lang=18" style="width:100%;height:500px;border:none;display:block;"></iframe>
+      </div>
+    </div>
+
+    <!-- 탭 3: (삭제됨) --><div style="display:none" id="tab-ai-summary">
+      <div class="section-label">AI Summary</div>
+      <div class="section-title">🤖 이번 주 경제 지표 AI 요약</div>
+
+      <!-- AI 요약 카드 (Claude API) -->
+      <div class="ai-card">
+        <div class="ai-card-top">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span class="ai-title">이번 주 주요 경제 일정 분석</span>
+              <span class="ai-badge">✨ AI 요약</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--ink3);">Claude AI가 주요 지표의 의미와 시장 영향을 요약해 드립니다</div>
+          </div>
+          <button class="ai-btn" id="ai-gen-btn" onclick="generateAISummary()">
+            ✨ AI 요약 생성
+          </button>
+        </div>
+        <div class="ai-body">
+          <div class="ai-placeholder" id="ai-placeholder">
+            <div class="ai-placeholder-icon">🤖</div>
+            <div style="font-weight:600;color:var(--ink2);margin-bottom:4px;">AI 요약을 생성해 보세요</div>
+            <div>버튼을 누르면 이번 주 주요 경제 지표를 분석하여<br>쉬운 언어로 요약해 드립니다</div>
+          </div>
+          <div id="ai-loading" style="display:none;">
+            <div class="ai-loading"><div class="ai-spinner"></div>Claude AI가 경제 데이터를 분석하고 있습니다...</div>
+          </div>
+          <div id="ai-result" class="ai-result" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- FOMC 관련 별도 요약 -->
+      <div class="ai-card">
+        <div class="ai-card-top">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span class="ai-title">FOMC · 금리 정책 요약</span>
+              <span class="ai-badge">✨ AI 요약</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--ink3);">연준 금리 결정의 배경과 시장 영향을 분석합니다</div>
+          </div>
+          <button class="ai-btn" id="ai-fomc-btn" onclick="generateFOMCSummary()">
+            ✨ FOMC 분석
+          </button>
+        </div>
+        <div class="ai-body">
+          <div class="ai-placeholder" id="fomc-placeholder">
+            <div class="ai-placeholder-icon">🏦</div>
+            <div style="font-weight:600;color:var(--ink2);margin-bottom:4px;">FOMC 분석을 생성해 보세요</div>
+            <div>연준(Fed)의 금리 결정 배경, 시장 반응,<br>국내 주식·코인·환율에 미치는 영향을 분석합니다</div>
+          </div>
+          <div id="fomc-loading" style="display:none;">
+            <div class="ai-loading"><div class="ai-spinner"></div>FOMC 데이터를 분석 중입니다...</div>
+          </div>
+          <div id="fomc-result" class="ai-result" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- 거시경제 지표 해설 -->
+      <div class="ai-card">
+        <div class="ai-card-top">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span class="ai-title">경제 지표 용어 해설</span>
+              <span class="ai-badge">✨ AI 요약</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--ink3);">CPI, PPI, NFP 등 주요 지표의 의미를 쉽게 설명합니다</div>
+          </div>
+          <button class="ai-btn" id="ai-glossary-btn" onclick="generateGlossary()">
+            📖 용어 해설
+          </button>
+        </div>
+        <div class="ai-body">
+          <div class="ai-placeholder" id="glossary-placeholder">
+            <div class="ai-placeholder-icon">📚</div>
+            <div style="font-weight:600;color:var(--ink2);margin-bottom:4px;">경제 지표 용어 해설</div>
+            <div>CPI, PPI, NFP, FOMC, PMI 등<br>투자자라면 꼭 알아야 할 지표들을 한국어로 설명합니다</div>
+          </div>
+          <div id="glossary-loading" style="display:none;">
+            <div class="ai-loading"><div class="ai-spinner"></div>용어 해설을 생성 중입니다...</div>
+          </div>
+          <div id="glossary-result" class="ai-result" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 푸터 -->
+<footer>
+  <p><strong>고려대 재학생 트레이더</strong> · 본 페이지는 투자 자문을 제공하지 않습니다.</p>
+  <p>모든 투자 판단의 책임은 투자자 본인에게 있습니다. 경제 지표 데이터는 트레이딩뷰에서 제공됩니다.</p>
+  <p style="margin-top:6px;"><a href="index.html">← 메인으로 돌아가기</a></p>
+</footer>
+
+<!-- 플로팅 버튼 -->
+<div class="float-btns">
+  <button class="float-btn" id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="맨 위로">↑</button>
+</div>
+
+<script>
+/* ── 다크모드 ── */
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('toggleLabel').textContent = dark ? '라이트모드' : '다크모드';
+  document.querySelector('.toggle-icon').textContent = dark ? '☀️' : '🌙';
+}
+function toggleDark() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  applyTheme(!isDark);
+  localStorage.setItem('theme', !isDark ? 'dark' : 'light');
+}
+(function(){ applyTheme(localStorage.getItem('theme') === 'dark'); })();
+
+/* ── 스크롤 ── */
+window.addEventListener('scroll', () => {
+  const el = document.documentElement;
+  const pct = el.scrollTop / (el.scrollHeight - el.clientHeight) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('scroll-top').classList.toggle('visible', window.scrollY > 300);
+});
+
+/* ── 탭 전환 ── */
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const map = {calendar:0,'key-events':1};
+  btns[map[id]].classList.add('active');
+}
+
+/* ── 주간 날짜 레이블 ── */
+(function() {
+  const now = new Date();
+  const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+  const el = document.getElementById('week-range-label');
+  if (el) el.textContent = `(${fmt(mon)} ~ ${fmt(fri)})`;
+})();
+
+/* ── 이벤트 데이터 ── */
+const eventsData = [
+  {day:'월',time:'22:30',country:'us',impact:'high',name:'제조업 PMI',desc:'ISM 제조업 구매관리자지수 (예측: 49.8)',prev:'49.0',forecast:'49.8'},
+  {day:'화',time:'21:45',country:'us',impact:'mid',name:'JOLTS 구인건수',desc:'미국 구인·이직 현황 보고서',prev:'863만',forecast:'880만'},
+  {day:'수',time:'21:15',country:'us',impact:'high',name:'ADP 민간고용',desc:'민간 부문 고용자 수 변화 (전월 대비)',prev:'+14.5만',forecast:'+15.0만'},
+  {day:'수',time:'23:00',country:'us',impact:'high',name:'FOMC 의사록',desc:'연준 통화정책 결정 회의록 공개',prev:'-',forecast:'-'},
+  {day:'목',time:'21:30',country:'us',impact:'high',name:'실업수당청구건수',desc:'신규 실업수당 청구 건수 (주간)',prev:'22.5만',forecast:'22.0만'},
+  {day:'목',time:'21:30',country:'us',impact:'high',name:'PPI (생산자물가)',desc:'생산자 물가지수 (전월 대비)',prev:'+0.2%',forecast:'+0.2%'},
+  {day:'금',time:'21:30',country:'us',impact:'high',name:'NFP (비농업고용)',desc:'비농업 부문 신규 고용자 수',prev:'+22.8만',forecast:'+18.0만'},
+  {day:'금',time:'21:30',country:'us',impact:'high',name:'실업률',desc:'미국 실업률 (전월 대비)',prev:'4.2%',forecast:'4.2%'},
+  {day:'화',time:'09:00',country:'kr',impact:'mid',name:'한국 수출입 지표',desc:'월간 수출·수입 증감률 발표',prev:'+3.2%',forecast:'+2.8%'},
+  {day:'수',time:'11:00',country:'kr',impact:'high',name:'한국 기준금리 결정',desc:'한국은행 금융통화위원회 금리 결정',prev:'3.50%',forecast:'3.25%'},
+  {day:'목',time:'18:00',country:'eu',impact:'high',name:'유로존 CPI (소비자물가)',desc:'유럽 소비자물가지수 최종치',prev:'+2.2%',forecast:'+2.3%'},
+  {day:'목',time:'17:00',country:'eu',impact:'mid',name:'ECB 경제 보고서',desc:'유럽중앙은행 정기 경제 전망 보고서',prev:'-',forecast:'-'},
+];
+
+let currentFilter = 'all';
+
+function filterEvents(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderEvents();
+}
+
+function renderEvents() {
+  const list = document.getElementById('event-list');
+  if (!list) return;
+  const days = ['월','화','수','목','금'];
+  let html = '';
+  let filtered = eventsData.filter(e => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'high') return e.impact === 'high';
+    return e.country === currentFilter;
+  });
+
+  if (filtered.length === 0) {
+    html = '<div style="padding:24px 0;text-align:center;color:var(--ink4);font-size:0.85rem;">해당 조건의 일정이 없습니다</div>';
+  } else {
+    filtered.forEach(e => {
+      const flag = {us:'🇺🇸 미국',kr:'🇰🇷 한국',eu:'🇪🇺 유럽'}[e.country];
+      const impClass = {high:'impact-high',mid:'impact-mid',low:'impact-low'}[e.impact];
+      const impLabel = {high:'고영향',mid:'중영향',low:'저영향'}[e.impact];
+      const keyBadge = e.impact === 'high' ? '<span class="key-event-badge">⚡ 주목</span>' : '';
+      html += `
+        <div class="event-item">
+          <div class="event-date-block">
+            <div class="event-date">${e.day}요일</div>
+            <div class="event-time">${e.time}</div>
+          </div>
+          <div class="event-impact ${impClass}" title="${impLabel}"></div>
+          <div class="event-body">
+            <div class="event-name">${e.name}${keyBadge}</div>
+            <div class="event-country">${flag} · ${e.desc}</div>
+            <div class="event-vals">
+              <div class="event-val"><span class="event-val-label">이전</span><span class="event-val-num">${e.prev}</span></div>
+              <div class="event-val"><span class="event-val-label">예측</span><span class="event-val-num">${e.forecast}</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  list.innerHTML = html;
+}
+
+renderEvents();
+
+/* ── AI 요약 생성 (Claude API) ── */
+async function callClaude(prompt, resultId, loadingId, placeholderId, btnId) {
+  const btn = document.getElementById(btnId);
+  const loading = document.getElementById(loadingId);
+  const result = document.getElementById(resultId);
+  const placeholder = document.getElementById(placeholderId);
+
+  btn.disabled = true;
+  btn.textContent = '생성 중...';
+  placeholder.style.display = 'none';
+  loading.style.display = 'flex';
+  result.style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(c => c.type === 'text')?.text || '결과를 가져오지 못했습니다.';
+    loading.style.display = 'none';
+    result.style.display = 'block';
+    result.innerHTML = formatAIResult(text);
+  } catch (err) {
+    loading.style.display = 'none';
+    result.style.display = 'block';
+    result.innerHTML = '<p style="color:var(--red);">⚠️ AI 요약 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ 다시 생성';
+  }
+}
+
+function formatAIResult(text) {
+  const now = new Date();
+  const ts = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} 기준`;
+  let html = text
+    .replace(/#{1,3}\s(.+)/g, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n- /g, '</p><ul><li>')
+    .replace(/\n/g, '<br>');
+  html = '<p>' + html + '</p>';
+  html += `<div class="ai-timestamp">🕐 ${ts} 생성됨 · Claude AI 제공</div>`;
+  return html;
+}
+
+function generateAISummary() {
+  const today = new Date();
+  const prompt = `당신은 금융·경제 전문 분석가입니다. 현재 날짜는 ${today.getFullYear()}년 ${today.getMonth()+1}월 기준입니다.
+
+이번 주 주요 경제 지표 일정을 바탕으로 한국 주식 투자자를 위한 쉬운 요약을 작성해주세요.
+
+다음 형식으로 작성해주세요:
+
+## 이번 주 핵심 요약
+[2-3문장으로 전체 분위기 요약]
+
+## 주목해야 할 지표
+- NFP(비농업 고용): [의미와 예상 반응]
+- CPI(소비자물가): [의미와 예상 반응]
+- FOMC 관련: [현재 통화정책 방향]
+
+## 한국 투자자 주의사항
+[환율, 국내 시장에 미칠 영향 2-3가지]
+
+## 결론
+[이번 주 투자 포지션 관리 포인트 1-2문장]
+
+한국어로, 초보 투자자도 이해할 수 있도록 쉽게 작성하되, 전문성 있게 써주세요. 투자 권유는 절대 하지 말고 정보 제공만 해주세요.`;
+  callClaude(prompt, 'ai-result', 'ai-loading', 'ai-placeholder', 'ai-gen-btn');
+}
+
+function generateFOMCSummary() {
+  const today = new Date();
+  const prompt = `당신은 연준(Fed) 통화정책 전문가입니다. ${today.getFullYear()}년 현재 시점 기준으로 작성해주세요.
+
+한국 개인 투자자를 위한 FOMC(연방공개시장위원회) 및 금리 정책 설명을 작성해주세요.
+
+## FOMC란?
+[2-3문장 간단 설명]
+
+## 현재 금리 환경
+[현재 금리 수준과 추세 설명]
+
+## 금리 변화가 투자에 미치는 영향
+- 주식 시장: [영향]
+- 코인 시장: [영향]  
+- 원·달러 환율: [영향]
+- 채권 시장: [영향]
+
+## 투자자가 확인해야 할 FOMC 지표
+[주요 확인 포인트 3가지]
+
+쉬운 언어로, 비유를 들어서 설명해주세요. 투자 권유는 하지 말고 교육 목적으로만 작성해주세요.`;
+  callClaude(prompt, 'fomc-result', 'fomc-loading', 'fomc-placeholder', 'ai-fomc-btn');
+}
+
+function generateGlossary() {
+  const prompt = `당신은 금융 교육 전문가입니다. 한국 주식·코인 투자 초보자를 위한 주요 경제 지표 용어집을 작성해주세요.
+
+다음 지표들을 각각 설명해주세요. 각 항목은 아래 형식으로:
+[지표명]: [한 줄 정의] → [시장에 미치는 영향]
+
+## 물가 관련
+- CPI (소비자물가지수)
+- PPI (생산자물가지수)
+- PCE
+
+## 고용 관련
+- NFP (비농업 고용)
+- 실업률
+- ADP 민간고용
+
+## 경기 관련
+- PMI (구매관리자지수)
+- GDP
+- 소비자심리지수
+
+## 통화정책
+- FOMC
+- 기준금리
+- QT/QE
+
+초보자도 이해할 수 있게, 예시를 들어 설명해주세요. 전체 500자 이내로 간결하게.`;
+  callClaude(prompt, 'glossary-result', 'glossary-loading', 'glossary-placeholder', 'ai-glossary-btn');
+}
+</script>
+</body>
+</html>
