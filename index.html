@@ -60,7 +60,7 @@
   .visitor-badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:0.73rem;color:var(--ink3);}
   .visitor-badge span.vnum{font-weight:700;color:var(--blue);}
   .visitor-sep{color:var(--border);}
-  .dark-toggle{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--ink3);display:flex;align-items:center;gap:6px;transition:all 0.15s;flex-shrink:0;white-space:nowrap;}
+  .dark-toggle{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--ink3);display:flex;align-items:center;gap:6px;transition:all 0.15s;flex-shrink:0;white-space:지금rap;}
   .dark-toggle:hover{border-color:var(--blue);color:var(--blue);}
 
   /* 햄버거 */
@@ -527,7 +527,7 @@ header {
     <div class="header-right">
       <div class="visitor-badge">
         <span class="vdesc">👁 오늘</span><span class="vnum" id="todayCount">—</span>
-        
+        <span id="totalCount" style="display:none">—</span>
       </div>
       <button class="dark-toggle" id="darkToggle" onclick="toggleDark()">
         <span class="toggle-icon">🌙</span><span id="toggleLabel">다크모드</span>
@@ -1118,12 +1118,19 @@ for (let i = 0; i < 24; i++) spawnParticle();
   const observer = new MutationObserver(() => {
     const src = document.getElementById('totalCount');
     const dst = document.getElementById('st-total');
-    if (src && dst) dst.textContent = src.textContent;
+    if (src && dst && src.textContent.trim() !== '—' && src.textContent.trim() !== '')
+      dst.textContent = src.textContent;
   });
   const tryStart = () => {
     const src = document.getElementById('totalCount');
-    if (src) observer.observe(src, { childList: true, subtree: true, characterData: true });
-    else setTimeout(tryStart, 500);
+    if (src) {
+      observer.observe(src, { childList: true, subtree: true, characterData: true });
+      // 이미 값이 있으면 즉시 반영
+      const dst = document.getElementById('st-total');
+      if (dst && src.textContent.trim() !== '—') dst.textContent = src.textContent;
+    } else {
+      setTimeout(tryStart, 300);
+    }
   };
   tryStart();
 })();
