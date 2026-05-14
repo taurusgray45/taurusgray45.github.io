@@ -423,6 +423,18 @@ window.switchTab = id => {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 });
+
+/* ── 전역 노출 (module scope → window) ── */
+globalThis.loginGoogle      = loginGoogle;
+globalThis.loginEmail       = loginEmail;
+globalThis.toggleAuthMode   = toggleAuthMode;
+globalThis.logout           = logout;
+globalThis.addTrade         = addTrade;
+globalThis.deleteTrade      = deleteTrade;
+globalThis.openModal        = openModal;
+globalThis.closeModal       = closeModal;
+globalThis.switchTab        = switchTab;
+globalThis.toggleChartType  = toggleChartType;
 </script>
 
 <style>
