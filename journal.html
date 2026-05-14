@@ -103,8 +103,11 @@ window.toggleAuthMode = () => {
   btn.dataset.mode = isLogin ? 'signup' : 'login';
   document.getElementById('email-btn-text').textContent = isLogin ? '회원가입' : '로그인';
   document.getElementById('auth-switch-text').innerHTML = isLogin
-    ? '이미 계정이 있으신가요? <a onclick="toggleAuthMode()">로그인</a>'
-    : '계정이 없으신가요? <a onclick="toggleAuthMode()">회원가입</a>';
+    ? '이미 계정이 있으신가요? <a id="auth-switch-link">로그인</a>'
+    : '계정이 없으신가요? <a id="auth-switch-link">회원가입</a>';
+  // 새로 생성된 링크에 이벤트 재연결
+  const link = document.getElementById('auth-switch-link');
+  if (link) link.addEventListener('click', () => window.toggleAuthMode());
   document.getElementById('auth-title').textContent = isLogin ? '회원가입' : '로그인';
 };
 
@@ -420,9 +423,25 @@ window.switchTab = id => {
   if (id === 'dashboard') renderCharts();
 };
 
-/* ── 날짜 기본값 ── */
+/* ── 날짜 기본값 + 로그인 버튼 이벤트 연결 ── */
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+
+  // Google 로그인 버튼
+  const googleBtn = document.getElementById('google-login-btn');
+  if (googleBtn) googleBtn.addEventListener('click', () => window.loginGoogle());
+
+  // 이메일 로그인 버튼
+  const emailBtn = document.getElementById('email-login-btn');
+  if (emailBtn) emailBtn.addEventListener('click', () => window.loginEmail());
+
+  // 비밀번호 Enter 키
+  const pwInput = document.getElementById('pw-input');
+  if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') window.loginEmail(); });
+
+  // 회원가입/로그인 전환 링크
+  const switchLink = document.getElementById('auth-switch-link');
+  if (switchLink) switchLink.addEventListener('click', () => window.toggleAuthMode());
 });
 </script>
 
@@ -704,19 +723,19 @@ tbody tr:hover { background:var(--bg2); }
       <h1>매매일지</h1>
       <p>고려대 재학생 트레이더 · 본인만 볼 수 있는 개인 투자 기록</p>
     </div>
-    <button class="google-btn" onclick="loginGoogle()">
+    <button class="google-btn" id="google-login-btn">
       <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Google로 계속하기
     </button>
     <div class="divider-line"><span>또는 이메일로</span></div>
     <div id="auth-title">로그인</div>
     <input class="form-input" id="email-input" type="email" placeholder="이메일 주소">
-    <input class="form-input" id="pw-input" type="password" placeholder="비밀번호 (6자 이상)" onkeydown="if(event.key==='Enter')loginEmail()">
-    <button class="email-btn" onclick="loginEmail()"><span id="email-btn-text">로그인</span></button>
+    <input class="form-input" id="pw-input" type="password" placeholder="비밀번호 (6자 이상)">
+    <button class="email-btn" id="email-login-btn"><span id="email-btn-text">로그인</span></button>
     <div id="auth-mode" data-mode="login" style="display:none"></div>
     <div class="auth-error" id="auth-error"></div>
     <div class="auth-switch" id="auth-switch-text">
-      계정이 없으신가요? <a onclick="toggleAuthMode()">회원가입</a>
+      계정이 없으신가요? <a id="auth-switch-link">회원가입</a>
     </div>
   </div>
 </div>
@@ -828,7 +847,7 @@ tbody tr:hover { background:var(--bg2); }
   <div class="modal-box">
     <div class="modal-title"><span>📝</span> 매매 기록 추가</div>
     <div class="field-row">
-      <div class="field"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="field"><label>날짜</label><input 입력="date" id="f-date"></div>
       <div class="field"><label>시장</label>
         <select id="f-market">
           <option value="KR">🇰🇷 국내주식</option>
@@ -838,16 +857,16 @@ tbody tr:hover { background:var(--bg2); }
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>종목 / 티커</label><input type="text" id="f-ticker" placeholder="삼성전자, AAPL"></div>
+      <div class="field"><label>종목 / 티커</label><input 입력="text" id="f-ticker" placeholder="삼성전자, AAPL"></div>
       <div class="field"><label>매매 유형</label>
         <select id="f-type"><option value="매수">매수</option><option value="매도">매도</option></select>
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>수량</label><input type="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
-      <div class="field"><label>단가</label><input type="number" id="f-price" placeholder="0" min="0"></div>
+      <div class="field"><label>수량</label><input 입력="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
+      <div class="field"><label>단가</label><input 입력="number" id="f-price" placeholder="0" min="0"></div>
     </div>
-    <div class="field"><label>수수료 (선택)</label><input type="number" id="f-fee" placeholder="0" min="0"></div>
+    <div class="field"><label>수수료 (선택)</label><input 입력="number" id="f-fee" placeholder="0" min="0"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
       <button class="btn-save" onclick="addTrade()">저장하기</button>
