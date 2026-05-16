@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<script type="module">
+<script 입력="module">
 import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -217,18 +217,12 @@ window.saveProfile = async () => {
 async function loadTrades() {
   if (!currentUser) return;
   try {
-    const q    = query(collection(db,'trades'), where('uid','==',currentUser.uid), orderBy('date','desc'));
+    const q    = query(collection(db,'trades'), where('uid','==',currentUser.uid));
     const snap = await getDocs(q);
-    trades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    trades = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => b.date.localeCompare(a.date));
     renderAll();
-  } catch(e) {
-    try {
-      const q2    = query(collection(db,'trades'), where('uid','==',currentUser.uid));
-      const snap2 = await getDocs(q2);
-      trades = snap2.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.date.localeCompare(a.date));
-      renderAll();
-    } catch(e2) { console.error(e2); }
-  }
+  } catch(e) { console.error(e); }
 }
 
 window.addTrade = async () => {
@@ -615,10 +609,10 @@ tbody tr:hover{background:var(--surface2);}
 .btn-save:disabled{opacity:0.6;cursor:not-allowed;}
 
 /* ── 토스트 ── */
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c2128;color:#fff;padding:11px 22px;border-radius:50px;font-size:0.85rem;font-weight:500;z-index:9999;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap;border:1px solid var(--border);}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c2128;color:#fff;padding:11px 22px;border-radius:50px;font-size:0.85rem;font-weight:500;z-index:9999;opacity:0;transition:all 0.3s;pointer-events:none;white-space:지금rap;border:1px solid var(--border);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.error{background:#3a0010;border-color:rgba(240,68,82,0.4);}
-.toast.success{border-color:rgba(5,185,148,0.4);}
+.toast.성공{border-color:rgba(5,185,148,0.4);}
 </style>
 </head>
 <body>
@@ -637,8 +631,8 @@ tbody tr:hover{background:var(--surface2);}
     </button>
     <div class="divider-line"><span>또는 이메일로</span></div>
     <div id="auth-title">로그인</div>
-    <input class="form-input" id="email-input" type="email" placeholder="이메일 주소">
-    <input class="form-input" id="pw-input" type="password" placeholder="비밀번호 (6자 이상)" onkeydown="if(event.key==='Enter')loginEmail()">
+    <input class="form-input" id="email-input" 입력="email" placeholder="이메일 주소">
+    <input class="form-input" id="pw-input" 입력="password" placeholder="비밀번호 (6자 이상)" onkeydown="if(event.key==='Enter')loginEmail()">
     <button class="email-btn" onclick="loginEmail()"><span id="email-btn-text">로그인</span></button>
     <div id="auth-mode" data-mode="login" style="display:none"></div>
     <div class="auth-error" id="auth-error"></div>
@@ -657,7 +651,7 @@ tbody tr:hover{background:var(--surface2);}
       <p>랭킹에 표시될 닉네임을 정해주세요.<br>이후 언제든지 변경 가능합니다.</p>
     </div>
     <label class="section-label">닉네임 (2~16자)</label>
-    <input class="form-input" id="nickname-input" type="text" placeholder="예: tiger_k, 불꽃매매" maxlength="16">
+    <input class="form-input" id="nickname-input" 입력="text" placeholder="예: tiger_k, 불꽃매매" maxlength="16">
 
     <div class="toggle-row">
       <div class="toggle-row-left">
@@ -665,7 +659,7 @@ tbody tr:hover{background:var(--surface2);}
         <span>내 수익률을 전체 랭킹에 표시합니다</span>
       </div>
       <label class="switch">
-        <input type="checkbox" id="public-toggle" checked>
+        <input 입력="checkbox" id="public-toggle" checked>
         <span class="slider"></span>
       </label>
     </div>
@@ -748,7 +742,7 @@ tbody tr:hover{background:var(--surface2);}
   <div class="modal-box">
     <div class="modal-title"><span>📝</span> 매매 기록 추가</div>
     <div class="field-row">
-      <div class="field"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="field"><label>날짜</label><input 입력="date" id="f-date"></div>
       <div class="field"><label>시장</label>
         <select id="f-market">
           <option value="KR">🇰🇷 국내주식</option>
@@ -758,16 +752,16 @@ tbody tr:hover{background:var(--surface2);}
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>종목명 / 티커</label><input type="text" id="f-ticker" placeholder="예: 삼성전자, AAPL"></div>
+      <div class="field"><label>종목명 / 티커</label><input 입력="text" id="f-ticker" placeholder="예: 삼성전자, AAPL"></div>
       <div class="field"><label>매매 유형</label>
         <select id="f-type"><option value="매수">매수</option><option value="매도">매도</option></select>
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>수량</label><input type="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
-      <div class="field"><label>단가</label><input type="number" id="f-price" placeholder="0" min="0"></div>
+      <div class="field"><label>수량</label><input 입력="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
+      <div class="field"><label>단가</label><input 입력="number" id="f-price" placeholder="0" min="0"></div>
     </div>
-    <div class="field"><label>수수료 (선택)</label><input type="number" id="f-fee" placeholder="0" min="0"></div>
+    <div class="field"><label>수수료 (선택)</label><input 입력="number" id="f-fee" placeholder="0" min="0"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
       <button class="btn-save" onclick="addTrade()">저장하기</button>
@@ -781,7 +775,7 @@ tbody tr:hover{background:var(--surface2);}
     <div class="modal-title"><span>⚙️</span> 프로필 설정</div>
     <div class="field">
       <label>닉네임 (2~16자)</label>
-      <input type="text" id="profile-nick-input" placeholder="닉네임 입력" maxlength="16">
+      <input 입력="text" id="profile-nick-input" placeholder="닉네임 입력" maxlength="16">
     </div>
     <div class="toggle-row" style="margin-bottom:0;">
       <div class="toggle-row-left">
@@ -789,7 +783,7 @@ tbody tr:hover{background:var(--surface2);}
         <span>내 수익률을 전체 랭킹에 표시합니다</span>
       </div>
       <label class="switch">
-        <input type="checkbox" id="profile-public-toggle" checked>
+        <input 입력="checkbox" id="profile-public-toggle" checked>
         <span class="slider"></span>
       </label>
     </div>
