@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수익률 랭킹 · 고려대 재학생 트레이더</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script type="module">
+import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, getDocs, query, where, orderBy, limit }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyATj_hRg6sKelnIK6f2wbNswnS8GJEoTVM",
+  authDomain: "koreacount-5f7ee.firebaseapp.com",
+  projectId: "koreacount-5f7ee",
+  storageBucket: "koreacount-5f7ee.firebasestorage.app",
+  messagingSenderId: "158317827519",
+  appId: "1:158317827519:web:ce12e78b1db966b9eb51ee"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let currentUid = null;
+
+/* ── Auth — 로그인 상태 확인 ── */
+onAuthStateChanged(auth, user => {
+  currentUid = user ? user.uid : null;
+  loadRanking();
+});
+
+/* ──────────────────────────────────────────
+   랭킹 로드: users 컬렉션에서 직접 읽기
+   - isPublic: true이고 returnRate가 null이 아닌 문서만
+   - 클라이언트 정렬로 TOP 100 추출
+────────────────────────────────────────── */
+async function loadRanking() {
+  const statusEl = document.getElementById('load-status');
+  try {
+    /* users 컬렉션 전체 읽기 (공개 설정 + 수익률 있는 문서만) */
+    const snap = await getDocs(
+      query(collection(db, 'users'), where('isPublic', '==', true))
+    );
+
+    const rows = [];
+    snap.forEach(d => {
+      const data = d.data();
+      // returnRate가 null이거나 없으면 매도 기록 없음 → 제외
+      if (data.returnRate === null || data.returnRate === undefined) return;
+      if (!data.nickname) return;
+      rows.push({
+        uid:           d.id,
+        nickname:      data.nickname,
+        returnRate:    data.returnRate,
+        totalRealized: data.totalRealized ?? 0,
+        winRate:       data.winRate       ?? 0,
+        totalTrades:   data.totalTrades   ?? 0,
+        sellCount:     data.sellCount     ?? 0,
+        lastDate:      data.lastDate      ?? '-',
+        isSelf:        d.id === currentUid
+      });
+    });
+
+    /* 수익률 내림차순 정렬 → TOP 100 */
+    rows.sort((a, b) => b.returnRate - a.returnRate);
+    const top100 = rows.slice(0, 100);
+
+    renderRanking(top100);
+    statusEl.style.display = 'none';
+
+  } catch(e) {
+    statusEl.textContent = '불러오기 오류: ' + e.message;
+    statusEl.style.color = '#f04452';
+    console.error(e);
+  }
+}
+
+/* ── 렌더링 ── */
+function renderRanking(list) {
+  const tbody    = document.getElementById('rank-tbody');
+  const myBanner = document.getElementById('my-rank-banner');
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">
+      아직 랭킹 데이터가 없습니다. 매매일지를 먼저 작성해주세요! 📝
+    </td></tr>`;
+    return;
+  }
+
+  /* 내 순위 배너 */
+  const myIdx = list.findIndex(r => r.isSelf);
+  if (myIdx !== -1 && currentUid) {
+    const me = list[myIdx];
+    myBanner.style.display = 'flex';
+    document.getElementById('my-rank-num').textContent  = '#' + (myIdx + 1);
+    document.getElementById('my-rate-val').textContent  = fmt(me.returnRate, true);
+    document.getElementById('my-rate-val').className    = 'my-stat-num ' + (me.returnRate >= 0 ? 'up' : 'down');
+    document.getElementById('my-win-val').textContent   = me.winRate.toFixed(1) + '%';
+    document.getElementById('my-trade-val').textContent = me.totalTrades + '건';
+  }
+
+  tbody.innerHTML = list.map((r, i) => {
+    const rank     = i + 1;
+    const medal    = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    const rateCls  = r.returnRate    >= 0 ? 'up' : 'down';
+    const pnlCls   = r.totalRealized >= 0 ? 'up' : 'down';
+    const selfCls  = r.isSelf ? 'self-row' : '';
+    const selfBadge = r.isSelf ? '<span class="self-badge">나</span>' : '';
+    return `<tr class="${selfCls}">
+      <td class="rank-col">${medal}</td>
+      <td class="nick-col">${esc(r.nickname)}${selfBadge}</td>
+      <td class="${rateCls} bold">${fmt(r.returnRate, true)}</td>
+      <td class="${pnlCls}">${fmtWon(r.totalRealized)}</td>
+      <td>${r.winRate.toFixed(1)}%</td>
+      <td>${r.totalTrades}건</td>
+      <td>${r.sellCount}회</td>
+      <td class="date-col">${r.lastDate}</td>
+    </tr>`;
+  }).join('');
+}
+
+const fmt    = (n, pct) => (n >= 0 ? '+' : '') + n.toFixed(2) + (pct ? '%' : '');
+const fmtWon = n => (n >= 0 ? '+' : '') + Math.round(n).toLocaleString('ko') + '원';
+const esc    = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+window.scrollToMe = () => {
+  const row = document.querySelector('tr.self-row');
+  if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+</script>
+
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;
+  --ink:#e6edf3;--ink2:#c9d1d9;--ink3:#8b949e;--ink4:#484f58;
+  --blue:#3182f6;--blue-light:rgba(49,130,246,0.15);
+  --green:#05b994;--red:#f04452;--yellow:#f5a623;
+  --border:#30363d;--radius:12px;
+  --shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+[data-theme="light"]{
+  --bg:#f0f4f8;--surface:#fff;--surface2:#f6f8fa;
+  --ink:#1c2128;--ink2:#333;--ink3:#666;--ink4:#aaa;
+  --border:#d0d7de;--shadow:0 4px 16px rgba(0,0,0,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ── 헤더 ── */
+.app-header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 2rem;height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);
+}
+.header-left{display:flex;align-items:center;gap:14px;}
+.back-link{font-size:0.78rem;color:var(--ink3);text-decoration:none;transition:color 0.15s;}
+.back-link:hover{color:var(--blue);}
+.header-logo{font-size:0.95rem;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;text-decoration:none;}
+.header-logo-dot{width:7px;height:7px;background:var(--blue);border-radius:50%;}
+.journal-link{font-size:0.8rem;color:var(--blue);font-weight:600;text-decoration:none;background:var(--blue-light);padding:4px 12px;border-radius:20px;transition:all 0.15s;}
+.journal-link:hover{background:var(--blue);color:#fff;}
+
+/* ── 히어로 ── */
+.rank-hero{
+  background:linear-gradient(135deg,#0d1117 0%,#161b22 50%,#0d1117 100%);
+  border-bottom:1px solid var(--border);padding:48px 2rem 40px;
+  text-align:center;position:relative;overflow:hidden;
+}
+.rank-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 50% 0%,rgba(49,130,246,0.12) 0%,transparent 70%);
+  pointer-events:none;
+}
+.rank-hero-inner{position:relative;z-index:1;}
+.rank-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(49,130,246,0.15);border:1px solid rgba(49,130,246,0.3);
+  color:#60a5fa;font-size:0.75rem;font-weight:600;
+  padding:5px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:0.04em;
+}
+.rank-eyebrow-dot{width:5px;height:5px;background:#22d3ee;border-radius:50%;animation:pulse 2s infinite;}
+.rank-hero h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;color:#fff;letter-spacing:-0.5px;margin-bottom:10px;}
+.rank-hero h1 em{font-style:normal;background:linear-gradient(90deg,#3182f6,#22d3ee,#05b994);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.rank-hero-sub{font-size:0.9rem;color:rgba(255,255,255,0.45);line-height:1.8;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.85);}}
+
+/* ── 내 순위 배너 ── */
+.my-rank-banner{
+  display:none;align-items:center;justify-content:space-between;
+  background:linear-gradient(135deg,rgba(49,130,246,0.12),rgba(5,185,148,0.08));
+  border:1px solid rgba(49,130,246,0.3);border-radius:var(--radius);
+  padding:18px 24px;margin:24px auto;max-width:1200px;gap:16px;flex-wrap:wrap;
+}
+.my-rank-left{display:flex;align-items:center;gap:16px;}
+.my-rank-badge{
+  width:52px;height:52px;border-radius:14px;
+  background:rgba(49,130,246,0.2);border:1px solid rgba(49,130,246,0.4);
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+}
+.my-rank-label{font-size:0.72rem;color:var(--ink3);font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;}
+#my-rank-num{font-size:1.6rem;font-weight:700;color:var(--ink);letter-spacing:-0.5px;}
+.my-stats{display:flex;gap:24px;}
+.my-stat{text-align:center;}
+.my-stat-label{font-size:0.68rem;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px;}
+.my-stat-num{font-size:1.05rem;font-weight:700;color:var(--ink);}
+.my-stat-num.up{color:var(--green);}
+.my-stat-num.down{color:var(--red);}
+.scroll-me-btn{
+  background:var(--blue);color:#fff;border:none;
+  padding:8px 18px;border-radius:8px;font-size:0.8rem;
+  font-weight:700;cursor:pointer;transition:all 0.15s;
+  font-family:'Noto Sans KR',sans-serif;
+}
+.scroll-me-btn:hover{background:#1a6de8;}
+
+/* ── 본문 ── */
+.rank-body{max-width:1200px;margin:0 auto;padding:0 2rem 48px;}
+.rank-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.rank-meta-title{font-size:0.82rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;}
+.rank-meta-desc{font-size:0.75rem;color:var(--ink4);margin-top:2px;}
+.rank-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(5,185,148,0.12);border:1px solid rgba(5,185,148,0.3);
+  color:var(--green);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:6px;
+}
+
+/* ── 안내 카드 ── */
+.notice-card{
+  background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);
+  border-radius:var(--radius);padding:14px 18px;
+  margin-bottom:20px;font-size:0.82rem;color:var(--ink3);line-height:1.8;
+}
+.notice-card strong{color:var(--yellow);}
+code{font-size:0.8em;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;}
+
+/* ── 테이블 ── */
+.rank-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  padding:12px 16px;text-align:left;
+  font-size:0.7rem;font-weight:700;color:var(--ink3);
+  letter-spacing:0.05em;text-transform:uppercase;
+  background:var(--surface2);border-bottom:1px solid var(--border);
+}
+thead th.center{text-align:center;}
+tbody td{padding:14px 16px;font-size:0.85rem;color:var(--ink2);border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+tbody tr.self-row{background:rgba(49,130,246,0.07);}
+tbody tr.self-row:hover{background:rgba(49,130,246,0.12);}
+
+.rank-col{text-align:center;font-weight:700;font-size:1rem;min-width:52px;}
+.nick-col{font-weight:600;color:var(--ink);}
+.date-col{font-size:0.75rem;color:var(--ink4);}
+.bold{font-weight:700;}
+.up{color:var(--green);}
+.down{color:var(--red);}
+.self-badge{display:inline-block;background:var(--blue);color:#fff;font-size:0.62rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;}
+.empty-cell{text-align:center;padding:60px !important;color:var(--ink3);font-size:0.9rem;}
+
+/* ── 로딩 ── */
+#load-status{text-align:center;padding:60px 0;color:var(--ink3);font-size:0.9rem;}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── 반응형 ── */
+@media(max-width:700px){
+  .app-header{padding:0 1rem;}
+  .rank-hero{padding:36px 1.2rem 28px;}
+  .rank-body{padding:0 1rem 36px;}
+  .my-rank-banner{margin:16px 1rem;padding:14px 16px;}
+  .my-stats{gap:14px;}
+  thead th:nth-child(4),tbody td:nth-child(4){display:none;}
+  thead th:nth-child(7),tbody td:nth-child(7){display:none;}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-left">
+    <a href="index.html" class="back-link">← 홈</a>
+    <a class="header-logo" href="ranking.html"><div class="header-logo-dot"></div>수익률 랭킹</a>
+  </div>
+  <a href="journal.html" class="journal-link">📊 내 매매일지</a>
+</header>
+
+<div class="rank-hero">
+  <div class="rank-hero-inner">
+    <div class="rank-eyebrow"><span class="rank-eyebrow-dot"></span>실시간 순위 · 매매일지 기반</div>
+    <h1>트레이더 <em>수익률 랭킹</em></h1>
+    <p class="rank-hero-sub">
+      매매일지에 기록된 실현 손익 기반 수익률 순위입니다.<br>
+      시드 규모와 무관하게 <strong style="color:rgba(255,255,255,0.7);">수익률(%)</strong>로 공정하게 산정합니다.
+    </p>
+  </div>
+</div>
+
+<!-- 내 순위 배너 (로그인 + 공개인 경우만 표시) -->
+<div id="my-rank-banner" class="my-rank-banner">
+  <div class="my-rank-left">
+    <div class="my-rank-badge">🏆</div>
+    <div>
+      <div class="my-rank-label">내 현재 순위</div>
+      <div id="my-rank-num">-</div>
+    </div>
+  </div>
+  <div class="my-stats">
+    <div class="my-stat"><div class="my-stat-label">수익률</div><div class="my-stat-num" id="my-rate-val">-</div></div>
+    <div class="my-stat"><div class="my-stat-label">승률</div><div class="my-stat-num" id="my-win-val">-</div></div>
+    <div class="my-stat"><div class="my-stat-label">총 매매</div><div class="my-stat-num" id="my-trade-val">-</div></div>
+  </div>
+  <button class="scroll-me-btn" onclick="scrollToMe()">내 위치 보기 ↓</button>
+</div>
+
+<div class="rank-body">
+
+  <div class="notice-card">
+    <strong>📌 수익률 산정 기준</strong><br>
+    <code>수익률(%) = 총 실현 손익 ÷ 총 매수 금액 × 100</code>으로 계산합니다.
+    시드 규모와 무관하게 비율로 비교하므로 공평합니다.
+    랭킹 공개를 선택한 사용자만 표시되며, 매도 기록이 없으면 순위에 포함되지 않습니다.
+  </div>
+
+  <div class="rank-meta">
+    <div>
+      <div class="rank-meta-title">🏅 TOP 100 리더보드</div>
+      <div class="rank-meta-desc">공개 설정한 계정 · 실시간 집계</div>
+    </div>
+    <div class="rank-badge">📈 수익률 순위</div>
+  </div>
+
+  <div id="load-status"><span class="spinner"></span>순위를 불러오는 중...</div>
+
+  <div class="rank-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="center">순위</th>
+          <th>닉네임</th>
+          <th>수익률</th>
+          <th>실현 손익</th>
+          <th>승률</th>
+          <th>총 매매</th>
+          <th>매도 횟수</th>
+          <th>최근 거래일</th>
+        </tr>
+      </thead>
+      <tbody id="rank-tbody">
+        <tr><td colspan="8" class="empty-cell"><span class="spinner"></span> 데이터 로딩 중...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- 테마 토글 -->
+<div style="position:fixed;bottom:24px;right:24px;z-index:200;">
+  <button onclick="toggleTheme()" id="theme-btn" style="
+    background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:7px 14px;font-size:0.78rem;font-weight:600;color:var(--ink3);
+    cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.15s;box-shadow:var(--shadow);
+  ">☀️ 라이트모드</button>
+</div>
+
+<script>
+function toggleTheme(){
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme', isDark?'light':'dark');
+  document.getElementById('theme-btn').textContent = isDark?'🌙 다크모드':'☀️ 라이트모드';
+  localStorage.setItem('theme', isDark?'light':'dark');
+}
+const saved = localStorage.getItem('theme');
+if(saved){
+  document.documentElement.setAttribute('data-theme',saved);
+  document.getElementById('theme-btn').textContent = saved==='dark'?'☀️ 라이트모드':'🌙 다크모드';
+}
+</script>
+</body>
+</html>
