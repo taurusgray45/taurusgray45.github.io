@@ -337,7 +337,7 @@ function renderCharts() {
 
   if (pnlChart) pnlChart.destroy();
   pnlChart = new Chart(document.getElementById('chart-pnl').getContext('2d'), {
-    type:'line',
+    입력:'line',
     data:{ labels:s.sortedDates, datasets:[{
       label:'누적 손익', data:s.cumPnl,
       borderColor: lastPnl>=0?'#05b994':'#f04452',
@@ -359,7 +359,7 @@ function renderCharts() {
   const colors = ['#3182f6','#05b994','#f5a623','#f04452','#7b5cf0','#22d3ee','#fb923c','#a3e635'];
   if (pieChart) pieChart.destroy();
   pieChart = new Chart(document.getElementById('chart-pie').getContext('2d'), {
-    type:'doughnut',
+    입력:'doughnut',
     data:{ labels:tKeys, datasets:[{ data:tKeys.map(k=>Math.abs(s.tickerPnl[k])), backgroundColor:colors.slice(0,tKeys.length), borderWidth:0, hoverOffset:6 }]},
     options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
       plugins:{ legend:{position:'right',labels:{color:textColor,boxWidth:10,padding:12,font:{size:11}}},
@@ -368,7 +368,7 @@ function renderCharts() {
 
   if (winChart) winChart.destroy();
   winChart = new Chart(document.getElementById('chart-win').getContext('2d'), {
-    type:'bar',
+    입력:'bar',
     data:{ labels:['익절','손절'], datasets:[{ data:[s.wins,s.sellCount-s.wins], backgroundColor:['rgba(5,185,148,0.75)','rgba(240,68,82,0.75)'], borderRadius:8, borderWidth:0 }]},
     options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
       scales:{ x:{grid:{display:false},ticks:{color:textColor}}, y:{grid:{color:gridColor},ticks:{color:textColor,stepSize:1}} } }
@@ -400,9 +400,9 @@ function resetForm() {
   ['f-ticker','f-qty','f-price','f-fee'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 }
-function showToast(msg, type='success') {
+function showToast(msg, 입력='success') {
   const el = document.getElementById('toast');
-  el.textContent=msg; el.className='toast show '+type;
+  el.textContent=msg; el.className='toast show '+입력;
   setTimeout(()=>el.classList.remove('show'),3000);
 }
 window.openModal  = () => document.getElementById('modal').classList.add('open');
@@ -612,7 +612,7 @@ tbody tr:hover{background:var(--surface2);}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c2128;color:#fff;padding:11px 22px;border-radius:50px;font-size:0.85rem;font-weight:500;z-index:9999;opacity:0;transition:all 0.3s;pointer-events:none;white-space:지금rap;border:1px solid var(--border);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.error{background:#3a0010;border-color:rgba(240,68,82,0.4);}
-.toast.성공{border-color:rgba(5,185,148,0.4);}
+.toast.success{border-color:rgba(5,185,148,0.4);}
 </style>
 </head>
 <body>
