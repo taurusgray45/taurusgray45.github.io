@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <!-- Firebase -->
-<script type="module">
+<script 입력="module">
 import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -156,7 +156,7 @@ window.addTrade = async () => {
     qty:    parseFloat(document.getElementById('f-qty').value),
     price:  parseFloat(document.getElementById('f-price').value),
     fee:    parseFloat(document.getElementById('f-fee').value) || 0,
-    createdAt: Date.지금()
+    createdAt: Date.now()
   };
   if (!t.date || !t.ticker || !t.qty || !t.price) {
     showToast('모든 항목을 입력해주세요.', 'error'); return;
@@ -202,11 +202,11 @@ function calcStats() {
   // 일별 누적 손익
   const dailyMap = {};
   [...trades].reverse().forEach(t => {
-    if (t.type === '매도') {
+    if (t.입력 === '매도') {
       const k = t.ticker + '_' + t.market;
       // 해당 시점 평균단가 근사 (전체 매수 평균)
       const buyAvg = trades
-        .filter(x => x.ticker === t.ticker && x.market === t.market && x.type === '매수')
+        .filter(x => x.ticker === t.ticker && x.market === t.market && x.입력 === '매수')
         .reduce((acc, x) => ({ sum: acc.sum + x.price * x.qty, qty: acc.qty + x.qty }), { sum: 0, qty: 0 });
       const avg = buyAvg.qty > 0 ? buyAvg.sum / buyAvg.qty : t.price;
       const pnl = (t.price - avg) * t.qty - (t.fee || 0);
@@ -219,10 +219,10 @@ function calcStats() {
   const cumPnl = sortedDates.map(d => { cumulative += dailyMap[d]; return cumulative; });
 
   // 승률
-  const sellTrades = trades.filter(t => t.type === '매도');
+  const sellTrades = trades.filter(t => t.입력 === '매도');
   const wins = sellTrades.filter(t => {
     const buyAvg = trades
-      .filter(x => x.ticker === t.ticker && x.market === t.market && x.type === '매수')
+      .filter(x => x.ticker === t.ticker && x.market === t.market && x.입력 === '매수')
       .reduce((acc, x) => ({ sum: acc.sum + x.price * x.qty, qty: acc.qty + x.qty }), { sum: 0, qty: 0 });
     const avg = buyAvg.qty > 0 ? buyAvg.sum / buyAvg.qty : 0;
     return t.price > avg;
@@ -275,7 +275,7 @@ function renderCharts() {
   const textColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
 
   pnlChart = new Chart(pnlCtx, {
-    입력: 'line',
+    type: 'line',
     data: {
       labels: s.sortedDates,
       datasets: [{
@@ -321,7 +321,7 @@ function renderCharts() {
   if (pieChart) pieChart.destroy();
   const colors = ['#3182f6','#05b994','#f5a623','#f04452','#7b5cf0','#22d3ee','#fb923c','#a3e635'];
   pieChart = new Chart(pieCtx, {
-    입력: 'doughnut',
+    type: 'doughnut',
     data: {
       labels: tickerKeys,
       datasets: [{
@@ -346,7 +346,7 @@ function renderCharts() {
   const winCtx = document.getElementById('chart-win').getContext('2d');
   if (winChart) winChart.destroy();
   winChart = new Chart(winCtx, {
-    입력: 'bar',
+    type: 'bar',
     data: {
       labels: ['익절', '손절'],
       datasets: [{
@@ -394,10 +394,10 @@ function resetForm() {
   ['f-ticker','f-qty','f-price','f-fee'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 }
-function showToast(msg, 입력 = 'success') {
+function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = 'toast show ' + 입력;
+  el.className = 'toast show ' + type;
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 window.openModal  = () => { document.getElementById('modal').classList.add('open'); };
@@ -448,7 +448,7 @@ body{ font-family:'Noto Sans KR',-apple-system,sans-serif; background:var(--bg);
   box-shadow:var(--shadow);
   animation: fadeUp 0.5s ease both;
 }
-@keyframes fadeUp{ from{opacity:0;transform:translateY(16px);}까지{opacity:1;transform:translateY(0);} }
+@keyframes fadeUp{ from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);} }
 .login-logo { text-align:center; margin-bottom:32px; }
 .login-logo .logo-icon { font-size:2.5rem; display:block; margin-bottom:10px; }
 .login-logo h1 { font-size:1.35rem; font-weight:700; color:var(--ink); letter-spacing:-0.4px; }
@@ -467,7 +467,7 @@ body{ font-family:'Noto Sans KR',-apple-system,sans-serif; background:var(--bg);
 
 .divider-line { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
 .divider-line::before,.divider-line::after{ content:''; flex:1; height:1px; background:var(--border); }
-.divider-line span { font-size:0.72rem; color:var(--ink4); white-space:지금rap; }
+.divider-line span { font-size:0.72rem; color:var(--ink4); white-space:nowrap; }
 
 .form-input {
   width:100%; padding:11px 14px; border-radius:9px;
@@ -653,7 +653,7 @@ tbody tr:hover { background:var(--surface2); }
   position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px);
   background:#1c2128; color:#fff; padding:11px 22px; border-radius:50px;
   font-size:0.85rem; font-weight:500; z-index:9999;
-  opacity:0; transition:all 0.3s; pointer-events:none; white-space:지금rap;
+  opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap;
   border:1px solid var(--border);
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
