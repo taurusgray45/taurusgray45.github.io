@@ -467,7 +467,7 @@ function renderCharts() {
   // 누적 손익 차트
   destroyChart('chart-pnl');
   charts.pnl = new Chart(document.getElementById('chart-pnl').getContext('2d'), {
-    type:'line',
+    입력:'line',
     data:{ labels:s.dates, datasets:[{
       label:'누적 손익', data:s.cumPnl,
       borderColor:lineClr,
@@ -837,7 +837,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   border-radius:20px;padding:44px;width:100%;max-width:400px;
   box-shadow:var(--shadow);animation:up .4s ease both;
 }
-@keyframes up{from{opacity:0;transform:translateY(14px);}까지{opacity:1;transform:translateY(0);}}
+@keyframes up{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 .auth-logo{text-align:center;margin-bottom:28px;}
 .auth-logo .ico{font-size:2.4rem;display:block;margin-bottom:8px;}
 .auth-logo h1,.auth-logo h2{font-size:1.3rem;font-weight:700;color:var(--ink);}
@@ -854,7 +854,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .g-ico{width:18px;height:18px;}
 .divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.divider span{font-size:0.72rem;color:var(--ink4);white-space:지금rap;}
+.divider span{font-size:0.72rem;color:var(--ink4);white-space:nowrap;}
 
 .inp{
   width:100%;padding:10px 13px;border-radius:8px;
@@ -886,7 +886,11 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .toggle-row-l strong{font-size:.87rem;font-weight:600;color:var(--ink);display:block;margin-bottom:2px;}
 .toggle-row-l span{font-size:.74rem;color:var(--ink3);}
 .sw{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;}
-.sw input{opacity:0;width:0;height:0;}
+.sw input{
+  position:absolute;opacity:0;
+  width:100%;height:100%;
+  margin:0;cursor:pointer;z-index:1;
+}
 .sl{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.3s;}
 .sl::before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
 input:checked+.sl{background:var(--blue);}
@@ -1087,7 +1091,7 @@ tbody tr:last-child td{border-bottom:none;}
   background:rgba(240,68,82,.08);border:1px solid rgba(240,68,82,.25);
   color:var(--red);border-radius:6px;padding:3px 10px;
   font-size:.75rem;font-weight:600;cursor:pointer;
-  font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:지금rap;
+  font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap;
 }
 .del-btn:hover{background:var(--red);color:#fff;border-color:var(--red);}
 /* 검색 하이라이트 */
@@ -1169,16 +1173,19 @@ mark.hl{
 
 <!-- ══ 닉네임 설정 화면 ══ -->
 <div id="nickname-screen">
-  <div class="auth-box">
-    <!-- 뒤로가기 화살표 -->
+  <!-- 뒤로가기: auth-box 바깥에 위치 -->
+  <div style="position:fixed;top:20px;left:20px;z-index:10;">
     <button onclick="screen('login')" style="
       background:none;border:none;cursor:pointer;color:var(--ink3);
-      font-size:.82rem;display:flex;align-items:center;gap:5px;
-      margin-bottom:18px;padding:0;font-family:'Noto Sans KR',sans-serif;
-      transition:color .15s;
-    " onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--ink3)'">
+      font-size:.85rem;display:flex;align-items:center;gap:5px;
+      padding:8px 12px;border-radius:8px;
+      font-family:'Noto Sans KR',sans-serif;transition:all .15s;
+    " onmouseover="this.style.color='var(--blue)';this.style.background='rgba(49,130,246,0.08)'"
+       onmouseout="this.style.color='var(--ink3)';this.style.background='none'">
       ← 이전으로
     </button>
+  </div>
+  <div class="auth-box">
     <div class="auth-logo">
       <span class="ico">🏷️</span>
       <h2>닉네임 설정</h2>
