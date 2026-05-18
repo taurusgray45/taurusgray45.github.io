@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script type="module">
 
 /* ══════════════════════════════════
@@ -220,7 +222,7 @@ window.addTrade = async () => {
     qty:       parseFloat(v('f-qty')),
     price:     parseFloat(v('f-price')),
     fee:       parseFloat(v('f-fee')) || 0,
-    createdAt: Date.now()
+    createdAt: Date.지금()
   };
   if (!t.date || !t.ticker || isNaN(t.qty) || isNaN(t.price)) {
     toast('날짜, 종목, 수량, 단가는 필수입니다.', 'error'); return;
@@ -361,7 +363,7 @@ function calc(tradeList) {
 /* ══════════════════════════════════
    렌더링
 ══════════════════════════════════ */
-function renderAll() { renderStats(); renderCharts(); renderTable(); }
+function renderAll() { renderStats(); renderCharts(); window.renderTable(); }
 
 function renderStats() {
   const ft = filteredTrades();
@@ -398,7 +400,7 @@ function renderCharts() {
   // 누적 손익 차트
   if (charts.pnl) charts.pnl.destroy();
   charts.pnl = new Chart(document.getElementById('chart-pnl').getContext('2d'), {
-    type:'line',
+    입력:'line',
     data:{ labels:s.dates, datasets:[{
       label:'누적 손익', data:s.cumPnl,
       borderColor:lineClr,
@@ -424,7 +426,7 @@ function renderCharts() {
   const colors = ['#3182f6','#05b994','#f5a623','#f04452','#7b5cf0','#22d3ee','#fb923c','#a3e635'];
   if (charts.pie) charts.pie.destroy();
   charts.pie = new Chart(document.getElementById('chart-pie').getContext('2d'), {
-    type:'doughnut',
+    입력:'doughnut',
     data:{ labels:tKeys, datasets:[{
       data:tKeys.map(k=>Math.abs(s.tickerPnl[k])),
       backgroundColor:colors.slice(0,tKeys.length), borderWidth:0, hoverOffset:6
@@ -440,7 +442,7 @@ function renderCharts() {
   // 익절/손절 바
   if (charts.win) charts.win.destroy();
   charts.win = new Chart(document.getElementById('chart-win').getContext('2d'), {
-    type:'bar',
+    입력:'bar',
     data:{ labels:['익절','손절'], datasets:[{
       data:[s.wins, s.sellCount-s.wins],
       backgroundColor:['rgba(5,185,148,0.75)','rgba(240,68,82,0.75)'],
@@ -456,26 +458,203 @@ function renderCharts() {
   });
 }
 
-function renderTable() {
-  const ft    = filteredTrades();
-  const tbody = document.getElementById('trade-tbody');
-  if (!ft.length) {
+
+/* ── 검색어 하이라이트 ── */
+function highlight(text, keyword) {
+  if (!keyword) return text;
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(${escaped})`, 'gi'),
+    '<mark class="hl">$1</mark>');
+}
+
+window.renderTable = function renderTable() {
+  const ft         = filteredTrades();
+  const search     = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+  const typeFilter = document.getElementById('type-filter')?.value || 'all';
+  const tbody      = document.getElementById('trade-tbody');
+
+  // 검색 + 유형 필터
+  const list = ft.filter(t => {
+    const matchSearch = !search ||
+      (t.ticker || '').toLowerCase().includes(search) ||
+      (t.date   || '').includes(search);
+    const matchType = typeFilter === 'all' || t.입력 === typeFilter;
+    return matchSearch && matchType;
+  });
+
+  // 검색 결과 카운트 표시
+  const countEl = document.getElementById('search-count');
+  if (countEl) {
+    countEl.textContent = search
+      ? `"${search}" 검색 결과 ${list.length}건`
+      : '';
+  }
+
+  if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:44px;color:var(--ink3);">
-      ${TRADES.length ? '해당 기간에 매매 기록이 없습니다.' : '첫 거래를 기록해보세요! 📝'}
+      ${TRADES.length ? '검색 결과가 없습니다.' : '첫 거래를 기록해보세요! 📝'}
     </td></tr>`;
     return;
   }
-  const mktIcon = {'KR':'🇰🇷','US':'🇺🇸','COIN':'₿'};
-  tbody.innerHTML = ft.map(t => `<tr>
-    <td>${t.date}</td>
-    <td>${mktIcon[t.market]||t.market} <strong>${t.ticker}</strong></td>
-    <td><span class="badge ${t.입력==='매수'?'badge-buy':'badge-sell'}">${t.입력}</span></td>
-    <td>${(+t.qty).toLocaleString('ko')}</td>
-    <td>${(+t.price).toLocaleString('ko')}${t.market==='US'?'$':'원'}</td>
-    <td>${(t.qty*t.price).toLocaleString('ko')}${t.market==='US'?'$':'원'}</td>
-    <td><button class="del-btn" onclick="deleteTrade('${t.id}')">🗑</button></td>
-  </tr>`).join('');
+
+  // 월별 그룹핑
+  const groups = {};
+  list.forEach(t => {
+    const ym = (t.date || '').slice(0, 7);
+    if (!groups[ym]) groups[ym] = [];
+    groups[ym].push(t);
+  });
+
+  const mktIcon = { 'KR': '🇰🇷', 'US': '🇺🇸', 'COIN': '₿' };
+  let html = '';
+  Object.keys(groups).sort().reverse().forEach(ym => {
+    const [y, m] = ym.split('-');
+    const label       = `${y}년 ${parseInt(m)}월`;
+    const groupTrades = groups[ym];
+    const buyTotal    = groupTrades.filter(t => t.입력 === '매수').reduce((s, t) => s + t.qty * t.price, 0);
+    const sellTotal   = groupTrades.filter(t => t.입력 === '매도').reduce((s, t) => s + t.qty * t.price, 0);
+
+    html += `<tr class="month-header">
+      <td colspan="7">
+        <div class="month-header-inner">
+          <span class="month-label">📅 ${label}</span>
+          <div class="month-summary">
+            <span class="ms-buy">매수 ${buyTotal > 0 ? buyTotal.toLocaleString('ko') + '원' : '-'}</span>
+            <span class="ms-sell">매도 ${sellTotal > 0 ? sellTotal.toLocaleString('ko') + '원' : '-'}</span>
+            <span class="ms-cnt">${groupTrades.length}건</span>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+
+    groupTrades.forEach(t => {
+      // 종목명 하이라이트
+      const tickerHtml = highlight(t.ticker || '', search);
+      const dateHtml   = highlight(t.date   || '', search);
+
+      html += `<tr class="trade-row">
+        <td>${dateHtml}</td>
+        <td>${mktIcon[t.market] || t.market} <strong>${tickerHtml}</strong></td>
+        <td><span class="badge ${t.입력 === '매수' ? 'badge-buy' : 'badge-sell'}">${t.입력}</span></td>
+        <td>${(+t.qty).toLocaleString('ko')}</td>
+        <td>${(+t.price).toLocaleString('ko')}${t.market === 'US' ? '$' : '원'}</td>
+        <td>${(t.qty * t.price).toLocaleString('ko')}${t.market === 'US' ? '$' : '원'}</td>
+        <td>
+          <button class="del-btn" onclick="deleteTrade('${t.id}')" title="삭제">🗑 삭제</button>
+        </td>
+      </tr>`;
+    });
+  });
+
+  tbody.innerHTML = html;
 }
+
+/* ── 캡쳐 ── */
+window.captureJournal = async () => {
+  const btn = document.getElementById('capture-btn');
+  btn.textContent = '캡쳐 중...'; btn.disabled = true;
+  try {
+    const target = document.getElementById('pane-journal');
+    const canvas = await html2canvas(target, {
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0d1117',
+      scale: 2, useCORS: true, logging: false
+    });
+    const link = document.createElement('a');
+    link.download = `매매일지_${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('캡쳐 이미지가 저장됐습니다! 📸');
+  } catch(e) { toast('캡쳐 실패: '+e.message,'error'); }
+  finally { btn.textContent = '📸 캡쳐'; btn.disabled = false; }
+};
+
+window.captureDashboard = async () => {
+  const btn = document.getElementById('capture-dash-btn');
+  btn.textContent = '캡쳐 중...'; btn.disabled = true;
+  try {
+    const target = document.getElementById('pane-dashboard');
+    const canvas = await html2canvas(target, {
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0d1117',
+      scale: 2, useCORS: true, logging: false
+    });
+    const link = document.createElement('a');
+    link.download = `대시보드_${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('대시보드 캡쳐가 저장됐습니다! 📸');
+  } catch(e) { toast('캡쳐 실패: '+e.message,'error'); }
+  finally { btn.textContent = '📸 캡쳐'; btn.disabled = false; }
+};
+
+/* ── 엑셀 저장 ── */
+window.exportExcel = () => {
+  if (!TRADES.length) { toast('저장할 매매 기록이 없습니다.', 'error'); return; }
+
+  // 현재 필터 + 검색 적용된 목록 사용
+  const ft         = filteredTrades();
+  const search     = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+  const typeFilter = document.getElementById('type-filter')?.value || 'all';
+  const list = ft.filter(t => {
+    const matchSearch = !search ||
+      (t.ticker||'').toLowerCase().includes(search) ||
+      (t.date||'').includes(search);
+    const matchType = typeFilter === 'all' || t.입력 === typeFilter;
+    return matchSearch && matchType;
+  });
+
+  if (!list.length) { toast('내보낼 기록이 없습니다.', 'error'); return; }
+
+  // 시트 데이터 구성
+  const rows = list.map((t, i) => ({
+    'No':      i + 1,
+    '날짜':    t.date || '',
+    '종목':    t.ticker || '',
+    '시장':    t.market === 'KR' ? '국내주식' : t.market === 'US' ? '미국주식' : '코인',
+    '유형':    t.입력 || '',
+    '수량':    +t.qty || 0,
+    '단가':    +t.price || 0,
+    '금액':    +(t.qty * t.price).toFixed(2) || 0,
+    '수수료':  +t.fee || 0,
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // 컬럼 너비 설정
+  ws['!cols'] = [
+    { wch: 5 },  // No
+    { wch: 12 }, // 날짜
+    { wch: 14 }, // 종목
+    { wch: 10 }, // 시장
+    { wch: 6  }, // 유형
+    { wch: 10 }, // 수량
+    { wch: 14 }, // 단가
+    { wch: 16 }, // 금액
+    { wch: 10 }, // 수수료
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '매매내역');
+
+  // 요약 시트 추가
+  const s = calc(list);
+  const ret = s.totalBuy > 0 ? (s.totalRealized / s.totalBuy * 100).toFixed(2) + '%' : '-';
+  const summaryRows = [
+    { '항목': '총 매매 건수',  '값': list.length + '건' },
+    { '항목': '총 매수 금액',  '값': s.totalBuy.toLocaleString('ko') + '원' },
+    { '항목': '총 실현 손익',  '값': (s.totalRealized >= 0 ? '+' : '') + Math.round(s.totalRealized).toLocaleString('ko') + '원' },
+    { '항목': '총 수익률',     '값': (s.totalRealized >= 0 ? '+' : '') + ret },
+    { '항목': '승률',          '값': s.winRate.toFixed(1) + '%' },
+    { '항목': '매도 횟수',     '값': s.sellCount + '회' },
+    { '항목': '내보낸 날짜',   '값': new Date().toLocaleDateString('ko-KR') },
+  ];
+  const ws2 = XLSX.utils.json_to_sheet(summaryRows);
+  ws2['!cols'] = [{ wch: 16 }, { wch: 20 }];
+  XLSX.utils.book_append_sheet(wb, ws2, '요약');
+
+  const now = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `매매내역_${now}.xlsx`);
+  toast('엑셀 파일이 저장됐습니다! 📊');
+};
 
 /* ══════════════════════════════════
    프로필 모달
@@ -523,9 +702,9 @@ function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
 function showErr(id,msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
 function hideErr(id)     { document.getElementById(id).style.display='none'; }
 
-function toast(msg, type='success') {
+function toast(msg, 입력='success') {
   const el = document.getElementById('toast');
-  el.textContent = msg; el.className = 'toast show '+type;
+  el.textContent = msg; el.className = 'toast show '+입력;
   setTimeout(()=>el.classList.remove('show'), 3000);
 }
 
@@ -570,7 +749,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
   border-radius:20px;padding:44px;width:100%;max-width:400px;
   box-shadow:var(--shadow);animation:up .4s ease both;
 }
-@keyframes up{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes up{from{opacity:0;transform:translateY(14px);}까지{opacity:1;transform:translateY(0);}}
 .auth-logo{text-align:center;margin-bottom:28px;}
 .auth-logo .ico{font-size:2.4rem;display:block;margin-bottom:8px;}
 .auth-logo h1,.auth-logo h2{font-size:1.3rem;font-weight:700;color:var(--ink);}
@@ -587,7 +766,7 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .g-ico{width:18px;height:18px;}
 .divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.divider span{font-size:0.72rem;color:var(--ink4);white-space:nowrap;}
+.divider span{font-size:0.72rem;color:var(--ink4);white-space:지금rap;}
 
 .inp{
   width:100%;padding:10px 13px;border-radius:8px;
@@ -706,13 +885,13 @@ input:checked+.sl::before{transform:translateX(18px);}
 }
 
 /* ── 통계 카드 ── */
-.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px;}
+.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px;}
 @media(max-width:1000px){.stats-row{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:600px){.stats-row{grid-template-columns:repeat(2,1fr);}}
-.stat-card{background:var(--sur);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;transition:all .2s;}
-.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
-.stat-lbl{font-size:.7rem;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
-.stat-val{font-size:1.25rem;font-weight:700;color:var(--ink);letter-spacing:-.5px;}
+.stat-card{background:var(--sur);border:1px solid var(--border);border-radius:var(--r);padding:24px 22px;transition:all .2s;}
+.stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+.stat-lbl{font-size:.74rem;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.stat-val{font-size:1.55rem;font-weight:700;color:var(--ink);letter-spacing:-.5px;}
 .stat-val.up{color:var(--green);}
 .stat-val.down{color:var(--red);}
 
@@ -726,8 +905,9 @@ input:checked+.sl::before{transform:translateX(18px);}
 .chart-wrap{position:relative;height:210px;}
 
 /* ── 테이블 ── */
-.tbl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.tbl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
 .tbl-ttl{font-size:1.05rem;font-weight:700;}
+.tbl-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .add-btn{
   display:inline-flex;align-items:center;gap:6px;
   background:var(--blue);color:#fff;border:none;border-radius:9px;
@@ -735,18 +915,74 @@ input:checked+.sl::before{transform:translateX(18px);}
   font-family:'Noto Sans KR',sans-serif;transition:all .15s;
 }
 .add-btn:hover{background:#1a6de8;}
+.capture-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--sur2);color:var(--ink3);border:1px solid var(--border);border-radius:9px;
+  padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .15s;
+}
+.capture-btn:hover{border-color:var(--blue);color:var(--blue);}
+.capture-btn:disabled{opacity:.5;cursor:not-allowed;}
+.excel-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(5,185,148,.1);color:var(--green);border:1px solid rgba(5,185,148,.3);border-radius:9px;
+  padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .15s;
+}
+.excel-btn:hover{background:var(--green);color:#fff;border-color:var(--green);}
+
+/* 검색 + 유형 필터 */
+.search-bar{
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;
+}
+.search-inp{
+  flex:1;min-width:160px;padding:9px 14px 9px 36px;border-radius:9px;
+  border:1px solid var(--border);background:var(--sur2);color:var(--ink);
+  font-size:.85rem;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .15s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:10px center;
+}
+.search-inp:focus{border-color:var(--blue);}
+.type-sel{
+  padding:9px 12px;border-radius:9px;border:1px solid var(--border);
+  background:var(--sur2);color:var(--ink);font-size:.82rem;
+  font-family:'Noto Sans KR',sans-serif;cursor:pointer;outline:none;transition:border-color .15s;
+}
+.type-sel:focus{border-color:var(--blue);}
+
+/* 월별 헤더 */
+.month-header td{
+  background:var(--sur2)!important;padding:10px 15px!important;
+  border-bottom:1px solid var(--border)!important;
+}
+.month-header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.month-label{font-size:.82rem;font-weight:700;color:var(--ink);}
+.month-summary{display:flex;align-items:center;gap:12px;}
+.ms-buy{font-size:.75rem;font-weight:600;color:var(--blue);}
+.ms-sell{font-size:.75rem;font-weight:600;color:var(--red);}
+.ms-cnt{font-size:.72rem;color:var(--ink4);background:var(--border);padding:2px 8px;border-radius:10px;}
+.trade-row:hover{background:var(--sur2);}
 .tbl-wrap{background:var(--sur);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
 table{width:100%;border-collapse:collapse;}
 thead th{padding:11px 15px;text-align:left;font-size:.7rem;font-weight:700;color:var(--ink3);
   text-transform:uppercase;letter-spacing:.04em;background:var(--sur2);border-bottom:1px solid var(--border);}
 tbody td{padding:12px 15px;font-size:.85rem;color:var(--ink2);border-bottom:1px solid var(--border);}
 tbody tr:last-child td{border-bottom:none;}
-tbody tr:hover{background:var(--sur2);}
 .badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.72rem;font-weight:700;}
 .badge-buy{background:rgba(49,130,246,.15);color:var(--blue);}
 .badge-sell{background:rgba(240,68,82,.13);color:var(--red);}
-.del-btn{background:none;border:none;font-size:1rem;cursor:pointer;opacity:.4;transition:opacity .15s;padding:2px 5px;}
-.del-btn:hover{opacity:1;}
+.del-btn{
+  background:rgba(240,68,82,.08);border:1px solid rgba(240,68,82,.25);
+  color:var(--red);border-radius:6px;padding:3px 10px;
+  font-size:.75rem;font-weight:600;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap;
+}
+.del-btn:hover{background:var(--red);color:#fff;border-color:var(--red);}
+/* 검색 하이라이트 */
+mark.hl{
+  background:#f5a623;color:#000;border-radius:3px;
+  padding:0 2px;font-weight:700;font-style:normal;
+}
 
 /* ── 모달 ── */
 .modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);
@@ -778,11 +1014,11 @@ tbody tr:hover{background:var(--sur2);}
   position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(18px);
   background:#1c2128;color:#fff;padding:10px 22px;border-radius:50px;
   font-size:.85rem;font-weight:500;z-index:9999;opacity:0;transition:all .3s;
-  pointer-events:none;white-space:nowrap;border:1px solid var(--border);
+  pointer-events:none;white-space:지금rap;border:1px solid var(--border);
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.error{background:#3a0010;border-color:rgba(240,68,82,.4);}
-.toast.success{border-color:rgba(5,185,148,.4);}
+.toast.성공{border-color:rgba(5,185,148,.4);}
 </style>
 </head>
 <body>
@@ -805,8 +1041,8 @@ tbody tr:hover{background:var(--sur2);}
       Google로 계속하기
     </button>
     <div class="divider"><span>또는 이메일로</span></div>
-    <input class="inp" id="email-input" type="email" placeholder="이메일 주소">
-    <input class="inp" id="pw-input"    type="password" placeholder="비밀번호 (6자 이상)" onkeydown="if(event.key==='Enter')loginEmail()">
+    <input class="inp" id="email-input" 입력="email" placeholder="이메일 주소">
+    <input class="inp" id="pw-input"    입력="password" placeholder="비밀번호 (6자 이상)" onkeydown="if(event.key==='Enter')loginEmail()">
     <button class="auth-btn" onclick="loginEmail()">
       <span id="auth-btn-text">로그인</span>
     </button>
@@ -822,19 +1058,28 @@ tbody tr:hover{background:var(--sur2);}
 <!-- ══ 닉네임 설정 화면 ══ -->
 <div id="nickname-screen">
   <div class="auth-box">
+    <!-- 뒤로가기 화살표 -->
+    <button onclick="screen('login')" style="
+      background:none;border:none;cursor:pointer;color:var(--ink3);
+      font-size:.82rem;display:flex;align-items:center;gap:5px;
+      margin-bottom:18px;padding:0;font-family:'Noto Sans KR',sans-serif;
+      transition:color .15s;
+    " onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--ink3)'">
+      ← 이전으로
+    </button>
     <div class="auth-logo">
       <span class="ico">🏷️</span>
       <h2>닉네임 설정</h2>
       <p>랭킹에 표시될 닉네임을 정해주세요.<br>언제든지 변경 가능합니다.</p>
     </div>
     <label class="lbl">닉네임 (2~16자)</label>
-    <input class="inp" id="nickname-input" type="text" placeholder="예: tiger_k, 불꽃매매" maxlength="16">
+    <input class="inp" id="nickname-input" 입력="text" placeholder="예: tiger_k, 불꽃매매" maxlength="16">
     <div class="toggle-row">
       <div class="toggle-row-l">
         <strong>🏆 랭킹 공개</strong>
         <span>내 수익률을 전체 랭킹에 표시합니다</span>
       </div>
-      <label class="sw"><input type="checkbox" id="public-toggle" checked><span class="sl"></span></label>
+      <label class="sw"><input 입력="checkbox" id="public-toggle" checked><span class="sl"></span></label>
     </div>
     <div class="field-err" id="nickname-err"></div>
     <button class="primary-btn" id="nickname-btn" onclick="saveNickname()">시작하기 →</button>
@@ -870,6 +1115,13 @@ tbody tr:hover{background:var(--sur2);}
   <!-- 대시보드 탭 -->
   <div class="tab-pane active" id="pane-dashboard">
     <div class="body">
+
+      <!-- 대시보드 헤더 -->
+      <div class="tbl-hdr" style="margin-bottom:0;">
+        <div class="tbl-ttl">대시보드</div>
+        <button class="capture-btn" id="capture-dash-btn" onclick="captureDashboard()">📸 캡쳐</button>
+      </div>
+      <div style="height:16px;"></div>
 
       <!-- 기간 필터 -->
       <div class="filter-bar">
@@ -916,7 +1168,21 @@ tbody tr:hover{background:var(--sur2);}
     <div class="body">
       <div class="tbl-hdr">
         <div class="tbl-ttl">매매 기록</div>
-        <button class="add-btn" onclick="openModal()">+ 매매 기록 추가</button>
+        <div class="tbl-actions">
+          <button class="excel-btn" onclick="exportExcel()">📊 엑셀 저장</button>
+          <button class="capture-btn" id="capture-btn" onclick="captureJournal()">📸 캡쳐</button>
+          <button class="add-btn" onclick="openModal()">+ 매매 기록 추가</button>
+        </div>
+      </div>
+      <!-- 검색 + 유형 필터 -->
+      <div class="search-bar">
+        <input class="search-inp" id="search-input" 입력="text" placeholder="종목명, 날짜 검색..." oninput="window.renderTable()">
+        <select class="type-sel" id="type-filter" onchange="window.renderTable()">
+          <option value="all">전체</option>
+          <option value="매수">매수만</option>
+          <option value="매도">매도만</option>
+        </select>
+        <span id="search-count" style="font-size:.78rem;color:var(--blue);font-weight:600;"></span>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -936,7 +1202,7 @@ tbody tr:hover{background:var(--sur2);}
   <div class="modal-box">
     <div class="modal-ttl"><span>📝</span> 매매 기록 추가</div>
     <div class="row2">
-      <div class="field"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="field"><label>날짜</label><input 입력="date" id="f-date"></div>
       <div class="field"><label>시장</label>
         <select id="f-market">
           <option value="KR">🇰🇷 국내주식</option>
@@ -946,16 +1212,16 @@ tbody tr:hover{background:var(--sur2);}
       </div>
     </div>
     <div class="row2">
-      <div class="field"><label>종목 / 티커</label><input type="text" id="f-ticker" placeholder="예: 삼성전자, AAPL"></div>
+      <div class="field"><label>종목 / 티커</label><input 입력="text" id="f-ticker" placeholder="예: 삼성전자, AAPL"></div>
       <div class="field"><label>매매 유형</label>
         <select id="f-type"><option value="매수">매수</option><option value="매도">매도</option></select>
       </div>
     </div>
     <div class="row2">
-      <div class="field"><label>수량</label><input type="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
-      <div class="field"><label>단가</label><input type="number" id="f-price" placeholder="0" min="0"></div>
+      <div class="field"><label>수량</label><input 입력="number" id="f-qty" placeholder="0" min="0" step="0.0001"></div>
+      <div class="field"><label>단가</label><input 입력="number" id="f-price" placeholder="0" min="0"></div>
     </div>
-    <div class="field"><label>수수료 (선택)</label><input type="number" id="f-fee" placeholder="0" min="0"></div>
+    <div class="field"><label>수수료 (선택)</label><input 입력="number" id="f-fee" placeholder="0" min="0"></div>
     <div class="modal-acts">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
       <button class="btn-save" id="save-btn" onclick="addTrade()">저장하기</button>
@@ -967,13 +1233,13 @@ tbody tr:hover{background:var(--sur2);}
 <div class="modal" id="profile-modal" onclick="if(event.target===this)closeProfileModal()">
   <div class="modal-box">
     <div class="modal-ttl"><span>⚙️</span> 프로필 설정</div>
-    <div class="field"><label>닉네임 (2~16자)</label><input type="text" id="pf-nick" maxlength="16"></div>
+    <div class="field"><label>닉네임 (2~16자)</label><input 입력="text" id="pf-nick" maxlength="16"></div>
     <div class="toggle-row" style="margin-bottom:0;">
       <div class="toggle-row-l">
         <strong>🏆 랭킹 공개</strong>
         <span>내 수익률을 전체 랭킹에 표시합니다</span>
       </div>
-      <label class="sw"><input type="checkbox" id="pf-public" checked><span class="sl"></span></label>
+      <label class="sw"><input 입력="checkbox" id="pf-public" checked><span class="sl"></span></label>
     </div>
     <div class="field-err" id="pf-err" style="margin-top:10px;"></div>
     <div class="modal-acts">
